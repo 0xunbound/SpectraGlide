@@ -7,6 +7,8 @@
 [![Release](https://img.shields.io/badge/Release-v2.0-green.svg)](https://github.com/0xunbound/SpectraGlide/releases)
 [![License](https://img.shields.io/badge/License-MIT-purple.svg)](LICENSE)
 
+<img width="958" height="614" alt="Screenshot 2026-11-08 170334" src="https://github.com/user-attachments/assets/9ea7bdb8-972f-4b5e-92d8-3979e1027f6f" />
+
 ### 📥 Быстрая загрузка / Direct Download
 
 [![Download Latest Release](https://img.shields.io/badge/⚡_СКАЧАТЬ_SPECTRAGLIDE-v2.0_LATEST-success?style=for-the-badge&logo=windows)](https://github.com/0xunbound/SpectraGlide/releases/latest)
