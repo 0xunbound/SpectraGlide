@@ -1,70 +1,57 @@
-# ⚡ SpectraGlide // Ultra Low-Latency Network Engine
+# SpectraGlide
 
-> Lightweight Windows network accelerator engineered to eliminate packet jitter, stabilize Discord WebRTC voice channels, and remove 4K/8K media stream buffering bottlenecks.
+> **Высокопроизводительный нативный оптимизатор сети Windows и QoS-акселератор для потокового видео 4K/8K, ультра-низкой задержки Discord VoIP и снятия региональных ограничений с ChatGPT, Claude и других мировых сервисов.**  
+> *High-performance native Windows network optimizer and hardware-accelerated QoS utility for 4K/8K streaming, ultra-low latency Discord VoIP, and unblocking ChatGPT, Claude, and global services.*
 
-![Platform](https://img.shields.io/badge/Platform-Windows%2010%20%2F%2011-00f076?style=flat-square&logo=windows)
-![Architecture](https://img.shields.io/badge/Arch-x64-00f2fe?style=flat-square)
-![License](https://img.shields.io/badge/License-MIT-white?style=flat-square)
-
----
-
-### 💡 Why SpectraGlide?
-
-Many residential ISPs and regional backbone hops suffer from queue degradation and aggressive bufferbloat. This leads to robotic voice cutouts in Discord, latency spikes in competitive games, and constant stuttering when trying to watch 1440p/4K streams.
-
-Standard VPNs often make things worse by routing *all* your bandwidth through bloated third-party servers, increasing ping and slowing down your connection.
-
-**SpectraGlide is different:**
-It operates locally at the Windows kernel packet filter layer combined with an intelligent local relay — **fully autonomously with zero manual tuning required**:
-
-1. **Equalizes TCP/UDP packet timing:** Prioritizes voice and real-time WebRTC packets for crystal-clear audio.
-2. **Normalizes stream packet fragmentation:** Smooths out TLS/QUIC packet bursts so high-resolution video streams don't choke on provider buffers.
-3. **Autonomous Self-Healing:** The background engine passively tracks latency to worldwide backbones and automatically adapts packet shaping on the fly.
+[![Platform](https://img.shields.io/badge/Platform-Windows%2010%20%2F%2011-blue.svg)](https://github.com/0xunbound/SpectraGlide)
+[![Release](https://img.shields.io/badge/Release-v2.0-green.svg)](https://github.com/0xunbound/SpectraGlide/releases)
+[![License](https://img.shields.io/badge/License-MIT-purple.svg)](LICENSE)
 
 ---
 
-### ✨ Features
-
-- **Single-Button Autonomous Engine:** No confusing profiles, sliders, or config files. Hit **START** — the engine handles all adaptations automatically.
-- **Selective Optimization:** Only normalizes handshake headers and media streams. Your raw bandwidth (Steam downloads, file transfers, torrents) remains at 100% full wire speed.
-- **Built-in Live Sonar:** Real-time ping gauge showing true round-trip response times to key worldwide backbones.
-- **Ultra-Responsive Dark UI:** Hardware-accelerated WebView2 frontend with an animated waveform visualizer and glassmorphic aesthetic.
-- **100% Portable:** Single self-contained package. No Python, node.js, or external runtimes needed.
+## 🌐 Выберите язык / Select Language
+* [Русский](#русский)
+* [English](#english)
 
 ---
 
-### 🚀 Quick Start
+<a name="русский"></a>
+## 🇷🇺 Русский
 
-1. Head over to **[Releases](../../releases)** and grab the latest `SpectraGlide_v2.0.zip`.
-2. Extract the folder anywhere you like (e.g., your Desktop or `C:\Program Files`).
-3. Run `SpectraGlide.exe` as Administrator *(required to attach the local Windows network packet filtering driver)*.
-4. Click **«START ACCELERATION»**. That's it!
+**SpectraGlide** — это полностью автономный сетевой ускоритель для Windows, объединяющий управление пакетами на уровне ядра (WinDivert) и интеллектуальный двухуровневый шлюз маршрутизации для доступа к международным облачным сервисам и нейросетям без замедления остального трафика.
 
----
+> 💡 **Примечание:** Данная версия оптимизирована для ChatGPT, Claude, Copilot, Discord, YouTube и заблокированных ресурсов (Instagram, RuTracker и др.). Если вам требуется поддержка Google Gemini с выделенным европейским шлюзом, используйте сборку `SpectraGlide-Gemini`.
 
-### 🛠 Architecture Overview
+### 🌟 Ключевые возможности
 
-- **Core Packet Shaper:** Low-level Windows packet filter that normalizes transport-layer stream frames and prevents ISP transit bottlenecking.
-- **Smart Relay Hub:** Internal high-speed PAC router that cleanly dispatches cloud compute, AI, and API endpoints through optimal routing paths with automatic direct fallback.
-- **Lightweight Shell:** Clean Win32 shell paired with modern EdgeChromium WebView2 — zero Electron memory bloat.
-
----
-
-### ❓ FAQ
-
-**Q: Do I need to choose or switch profiles?**  
-A: No. SpectraGlide runs in a single, unified autonomous mode. It continuously monitors connection health and adjusts routing and packet timing under the hood without interrupting your active sessions.
-
-**Q: Does this throttle my download speeds or torrents?**  
-A: No. SpectraGlide only normalizes handshake metadata and media stream frames. Your high-bandwidth traffic continues flowing directly at full ISP speed.
-
-**Q: Do I need an external VPN account?**  
-A: No. Everything runs completely locally on your machine with zero external subscriptions.
-
-**Q: How do I completely stop and revert changes?**  
-A: Just click "STOP" in the app or close the window. The packet driver unhooks cleanly from memory and all Windows network settings instantly return to their defaults.
+* **Управление в один клик (Zero-Configuration)**  
+  Единственная кнопка «УСКОРИТЬ СЕТЬ». Никаких сложных режимов, переключателей и ручной настройки конфигураций.
+* **Аппаратный QoS для YouTube 4K/8K и Twitch**  
+  Оптимизация пакетов на уровне ядра Windows устраняет искусственное замедление (throttling) со стороны провайдеров. Видео воспроизводится в 4K 60fps без зависаний и задержек.
+* **Ультра-низкий джиттер для Discord и WebRTC**  
+  Пакетная приоритезация UDP-трафика для Discord Voice, игр и голосовых конференций. Предотвращает пропадание звука («кваканье») и разрывы соединения.
+* **Двухуровневый стелс-шлюз для AI (ChatGPT, Claude, Copilot)**  
+  Полный и бесперебойный доступ к мировым нейросетям без ошибок «App unavailable in your region»:
+  * **Tier 1 (Транспорт):** Пользовательский WireGuard (WARP с обфускацией Amnezia `H1/H2`) преодолевает любые блокировки и ТСПУ провайдеров на порту `127.0.0.1:1370`.
+  * **Tier 2 (Выход и маскировка):** Чистый IP-выход через прокси (`127.0.0.1:1371`), исключающий передачу заголовков `CF-Connecting-IP`. Cloudflare и AI-сервисы видят белый доверенный IP без ограничений.
+* **Обход блокировок популярных ресурсов (Instagram, RuTracker, Notion и др.)**  
+  Интеллектуальный PAC-маршрутизатор направляет заблокированные сайты через защищённый тоннель, оставляя весь остальной российский трафик нетронутым.
+* **100% безопасность и невмешательство в систему**  
+  SpectraGlide **не меняет** DNS-серверы сетевых карт через `netsh`, **не редактирует** файл `hosts` и не трогает локальные российские сервисы (банки, Госуслуги, VK работают напрямую на максимальной скорости). При выходе системный реестр полностью возвращается в исходное состояние.
+* **Плавный интерфейс (90–144 FPS)**  
+  Кастомный интерфейс на базе Microsoft WebView2 с аппаратным Win32-перетаскиванием окна, нулевой задержкой отклика и потреблением памяти менее 35 МБ.
+* **Автономная самодиагностика**  
+  Фоновый асинхронный монитор непрерывно замеряет отклик ключевых шлюзов с выводом реального пинга.
 
 ---
 
-### 📄 License
-Released under the [MIT License](LICENSE).
+### 🚀 Быстрый старт
+
+1. Скачайте архив релиза: [`SpectraGlide_v2.0.zip`](https://github.com/0xunbound/SpectraGlide/releases).
+2. Распакуйте архив в любую удобную папку.
+3. Запустите `SpectraGlide.exe` от имени **Администратора** (требуется для загрузки драйвера пакетного фильтра WinDivert).
+4. Нажмите кнопку **«УСКОРИТЬ СЕТЬ»** — система мгновенно поднимет оптимизацию.
+
+---
+
+### 🏛 Архитектура решения
