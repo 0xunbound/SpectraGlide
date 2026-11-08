@@ -19,7 +19,7 @@
 
 ## 🌐 Выберите язык / Select Language
 * [🇷🇺 Русский (Перейти к тексту)](#русский)
-* [🇬🇧 English (Dedicated page)](README_EN.md) | [🇬🇧 English (Scroll down)](#english)
+* [🇬🇧 English (Scroll down)](#english)
 
 ---
 
