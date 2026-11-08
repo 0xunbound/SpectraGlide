@@ -55,3 +55,82 @@
 ---
 
 ### 🏛 Архитектура решения
+
+             [ Исходящий трафик Windows ]
+                           │
+           ┌───────────────┴───────────────┐
+           ▼                               ▼
+[ Системный PAC-фильтр ]        [ WinDivert Kernel Filter ]
+           │                               │
+   (ChatGPT & Claude)             (YouTube 4K & Discord RTC)
+           │                               │
+           ▼                               ▼
+┌─────────────────────┐         ┌─────────────────────┐
+│ Tier 2: Exit Proxy  │         │ Пакетный десинхрони-│
+│  (US/EU Чистый IP)  │         │ затор (Fake QUIC &  │
+└──────────┬──────────┘         │ TCP Multi-Split)    │
+           │                            │
+           ▼                            │
+┌─────────────────────┐                 │
+│ Tier 1: WARP Tunnel │                 │
+│ (Amnezia H1/H2 AWG) │                 │
+└──────────┬──────────┘                 │
+           │                            │
+           └───────────────┬────────────┘
+                           ▼
+               [ Прямой свободный выход ]
+
+               
+---
+
+<a name="english"></a>
+## 🇬🇧 English
+
+**SpectraGlide** is a fully autonomous Windows network accelerator combining kernel-level packet shaping (WinDivert) with a smart two-tier relay gateway to provide seamless access to international cloud platforms and AI ecosystems without affecting local traffic.
+
+> 💡 **Note:** This version is tailored for ChatGPT, Claude, Copilot, Discord, YouTube, and general unblocking. If you need specialized Google Gemini support with a dedicated European gateway, use the `SpectraGlide-Gemini` edition.
+
+### 🌟 Key Features
+
+* **Zero-Configuration Autonomous Operation**  
+  Single-button execution («BOOST NETWORK»). No confusing modes, manual configs, or technical hurdles.
+* **4K/8K Video Streaming Acceleration**  
+  Kernel-level packet desynchronization engineered for high-bitrate video streams (YouTube, Twitch). Eliminates ISP throttling and artificial buffering.
+* **Ultra-Low Latency RTC & Voice Engine**  
+  Prioritized UDP packet flow for Discord Voice, WebRTC, and competitive gaming. Eliminates robotic voice artifacts and jitter.
+* **Two-Tier Stealth AI Gateway (ChatGPT, Claude, Copilot)**  
+  Uninterrupted access to modern AI platforms, avoiding "App unavailable in your region" errors:
+  * **Tier 1 (Transport):** Userspace WireGuard (WARP with Amnezia obfuscation `H1/H2`) bypasses deep packet inspection (DPI/TSPU) over `127.0.0.1:1370`.
+  * **Tier 2 (Clean Exit & Header Scrubbing):** Clean egress via Proxy (`127.0.0.1:1371`), completely stripping `CF-Connecting-IP` headers so Cloudflare and AI providers recognize it as a legitimate connection.
+* **Smart Domain Routing (Instagram, RuTracker, Notion, etc.)**  
+  System PAC routing automatically handles restricted resources through the stealth tunnel while keeping local domestic traffic 100% direct.
+* **100% Non-Intrusive & Clean**  
+  SpectraGlide **does not modify** network adapter DNS servers via `netsh`, **does not alter** the `hosts` file, and routes domestic traffic directly with zero latency. All registry changes are cleanly reverted on exit.
+* **Silky-Smooth Frameless UI (90–144 FPS)**  
+  Modern Win32 frameless interface powered by Microsoft WebView2, featuring responsive hardware window dragging and minimal RAM footprint (< 35 MB).
+* **Self-Healing Background Monitor**  
+  Asynchronous health engine actively probes service endpoints and updates real-time latency indicators.
+
+---
+
+### 🚀 Quick Start
+
+1. Download the latest release: [`SpectraGlide_v2.0.zip`](https://github.com/0xunbound/SpectraGlide/releases).
+2. Extract the archive into any folder.
+3. Run `SpectraGlide.exe` as **Administrator** (required for the WinDivert kernel-level driver).
+4. Click **«УСКОРИТЬ СЕТЬ» (BOOST NETWORK)** — optimization is engaged in less than a second.
+
+---
+
+## 🛠 Сборка из исходников / Build from Source
+
+### Требования / Requirements:
+- Windows 10 / 11 (x64)
+- Python 3.10+
+- PyInstaller (`pip install pyinstaller`)
+
+```bash
+git clone https://github.com/0xunbound/SpectraGlide.git
+cd SpectraGlide
+pip install -r requirements.txt
+python -m PyInstaller --clean SpectraGlide.spec
