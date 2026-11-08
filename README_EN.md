@@ -8,7 +8,7 @@
 
 ### 📥 Direct Download / Быстрая загрузка
 
-[![Download Latest Release](https://img.shields.io/badge/⚡_DOWNLOAD_SPECTRALIDE-v2.0_LATEST-success?style=for-the-badge&logo=windows)](https://github.com/0xunbound/SpectraGlide/releases/latest)
+[![Download Latest Release](https://img.shields.io/badge/⚡_DOWNLOAD_SPECTRAGLIDE-v2.0_LATEST-success?style=for-the-badge&logo=windows)](https://github.com/0xunbound/SpectraGlide/releases/latest)
 
 | Build | Purpose | Download |
 | :--- | :--- | :--- |
