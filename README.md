@@ -1,3 +1,15 @@
+---
+
+### 📥 Быстрая загрузка / Direct Download
+
+[![Download Latest Release](https://img.shields.io/badge/⚡_СКАЧАТЬ_SPECTRALIDE-v2.0_LATEST-success?style=for-the-badge&logo=windows)](https://github.com/0xunbound/SpectraGlide/releases/latest)
+
+| Сборка | Возможности | Скачать |
+| :--- | :--- | :--- |
+| 🚀 **SpectraGlide v2.0** | YouTube 4K, Discord VoIP, ChatGPT, Claude, заблокированные сайты | [⬇️ **Скачать ZIP**](https://github.com/0xunbound/SpectraGlide/releases/latest) |
+
+---
+
 # SpectraGlide
 
 > **Высокопроизводительный нативный оптимизатор сети Windows и QoS-акселератор для потокового видео 4K/8K, ультра-низкой задержки Discord VoIP и снятия региональных ограничений с ChatGPT, Claude и других мировых сервисов.**  
@@ -56,30 +68,20 @@
 
 ### 🏛 Архитектура решения
 
-             [ Исходящий трафик Windows ]
-                           │
-           ┌───────────────┴───────────────┐
-           ▼                               ▼
-[ Системный PAC-фильтр ]        [ WinDivert Kernel Filter ]
-           │                               │
-   (ChatGPT & Claude)             (YouTube 4K & Discord RTC)
-           │                               │
-           ▼                               ▼
-┌─────────────────────┐         ┌─────────────────────┐
-│ Tier 2: Exit Proxy  │         │ Пакетный десинхрони-│
-│  (US/EU Чистый IP)  │         │ затор (Fake QUIC &  │
-└──────────┬──────────┘         │ TCP Multi-Split)    │
-           │                            │
-           ▼                            │
-┌─────────────────────┐                 │
-│ Tier 1: WARP Tunnel │                 │
-│ (Amnezia H1/H2 AWG) │                 │
-└──────────┬──────────┘                 │
-           │                            │
-           └───────────────┬────────────┘
-                           ▼
-               [ Прямой свободный выход ]
+      ### 🏛 Архитектура решения
 
+```mermaid
+flowchart TD
+    Traffic["Исходящий трафик Windows"] --> PAC["Системный PAC-фильтр"]
+    Traffic --> Kernel["WinDivert Kernel Driver"]
+
+    PAC -- "AI (ChatGPT, Claude) & Блокировки" --> Tier2["Tier 2: Чистый Exit Proxy (127.0.0.1:1371)"]
+    Tier2 --> Tier1["Tier 1: WireGuard / WARP (127.0.0.1:1370)"]
+    Tier1 --> Internet["Свободный защищённый выход"]
+
+    Kernel -- "YouTube 4K & Discord RTC" --> Desync["Пакетный десинхронизатор (Fake QUIC & Split)"]
+    Desync --> Direct["Прямой канал к CDN провайдеров"]
+```
                
 ---
 
