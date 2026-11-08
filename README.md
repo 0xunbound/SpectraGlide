@@ -14,7 +14,6 @@
 | Сборка | Назначение | Скачать |
 | :--- | :--- | :--- |
 | 🚀 **SpectraGlide v2.0** | Аппаратный QoS, Discord RTC, видео 4K, облачные AI-сервисы (ChatGPT, Claude) | [⬇️ **Скачать ZIP**](https://github.com/0xunbound/SpectraGlide/releases/latest) |
-| 🧠 **SpectraGlide-Gemini** | Расширенная редакция с дополнительным европейским шлюзом для сервисов Google | [⬇️ **Скачать ZIP**](https://github.com/0xunbound/SpectraGlide/releases/latest) |
 
 ---
 
