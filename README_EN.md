@@ -13,7 +13,6 @@
 | Build | Purpose | Download |
 | :--- | :--- | :--- |
 | 🚀 **SpectraGlide v2.0** | Hardware QoS, Discord RTC, 4K streaming, Cloud AI (ChatGPT, Claude) | [⬇️ **Download ZIP**](https://github.com/0xunbound/SpectraGlide/releases/latest) |
-| 🧠 **SpectraGlide-Gemini** | Extended edition with dedicated routing gateway for Google services | [⬇️ **Download ZIP**](https://github.com/0xunbound/SpectraGlide/releases/latest) |
 
 ---
 
