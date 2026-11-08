@@ -1,117 +1,104 @@
----
-
-### 📥 Быстрая загрузка / Direct Download
-
-[![Download Latest Release](https://img.shields.io/badge/⚡_СКАЧАТЬ_SPECTRALIDE-v2.0_LATEST-success?style=for-the-badge&logo=windows)](https://github.com/0xunbound/SpectraGlide/releases/latest)
-
-| Сборка | Возможности | Скачать |
-| :--- | :--- | :--- |
-| 🚀 **SpectraGlide v2.0** | YouTube 4K, Discord VoIP, ChatGPT, Claude, заблокированные сайты | [⬇️ **Скачать ZIP**](https://github.com/0xunbound/SpectraGlide/releases/latest) |
-
----
-
 # SpectraGlide
 
-> **Высокопроизводительный нативный оптимизатор сети Windows и QoS-акселератор для потокового видео 4K/8K, ультра-низкой задержки Discord VoIP и снятия региональных ограничений с ChatGPT, Claude и других мировых сервисов.**  
-> *High-performance native Windows network optimizer and hardware-accelerated QoS utility for 4K/8K streaming, ultra-low latency Discord VoIP, and unblocking ChatGPT, Claude, and global services.*
+> **Высокопроизводительный нативный оптимизатор сети Windows и QoS-акселератор для потокового видео 4K/8K, снижения сетевых задержек Discord VoIP и стабильного доступа к облачным AI-платформам.**  
+> *High-performance native Windows network optimizer and hardware-accelerated QoS utility for 4K/8K media streaming, ultra-low latency Discord VoIP, and reliable cloud AI endpoint connectivity.*
 
 [![Platform](https://img.shields.io/badge/Platform-Windows%2010%20%2F%2011-blue.svg)](https://github.com/0xunbound/SpectraGlide)
 [![Release](https://img.shields.io/badge/Release-v2.0-green.svg)](https://github.com/0xunbound/SpectraGlide/releases)
 [![License](https://img.shields.io/badge/License-MIT-purple.svg)](LICENSE)
 
+### 📥 Быстрая загрузка / Direct Download
+
+[![Download Latest Release](https://img.shields.io/badge/⚡_СКАЧАТЬ_SPECTRALIDE-v2.0_LATEST-success?style=for-the-badge&logo=windows)](https://github.com/0xunbound/SpectraGlide/releases/latest)
+
+| Сборка | Назначение | Скачать |
+| :--- | :--- | :--- |
+| 🚀 **SpectraGlide v2.0** | Аппаратный QoS, Discord RTC, видео 4K, облачные AI-сервисы (ChatGPT, Claude) | [⬇️ **Скачать ZIP**](https://github.com/0xunbound/SpectraGlide/releases/latest) |
+| 🧠 **SpectraGlide-Gemini** | Расширенная редакция с дополнительным европейским шлюзом для сервисов Google | [⬇️ **Скачать ZIP**](https://github.com/0xunbound/SpectraGlide/releases/latest) |
+
 ---
 
 ## 🌐 Выберите язык / Select Language
-* [Русский](#русский)
-* [English](#english)
+* [🇷🇺 Русский (Перейти к тексту)](#русский)
+* [🇬🇧 English (Dedicated page)](README_EN.md) | [🇬🇧 English (Scroll down)](#english)
 
 ---
 
-<a name="русский"></a>
-## 🇷🇺 Русский
+<a id="русский"></a>
+## Русский
 
-**SpectraGlide** — это полностью автономный сетевой ускоритель для Windows, объединяющий управление пакетами на уровне ядра (WinDivert) и интеллектуальный двухуровневый шлюз маршрутизации для доступа к международным облачным сервисам и нейросетям без замедления остального трафика.
-
-> 💡 **Примечание:** Данная версия оптимизирована для ChatGPT, Claude, Copilot, Discord, YouTube и заблокированных ресурсов (Instagram, RuTracker и др.). Если вам требуется поддержка Google Gemini с выделенным европейским шлюзом, используйте сборку `SpectraGlide-Gemini`.
+**SpectraGlide** — это нативный сетевой акселератор для Windows, объединяющий управление сетевыми пакетами на уровне ядра (WinDivert) и интеллектуальный шлюз адаптивной маршрутизации. Утилита устраняет деградацию качества связи, дрожание задержки (джиттер) и искусственные ограничения пропускной способности без влияния на работу локальных сервисов.
 
 ### 🌟 Ключевые возможности
 
 * **Управление в один клик (Zero-Configuration)**  
-  Единственная кнопка «УСКОРИТЬ СЕТЬ». Никаких сложных режимов, переключателей и ручной настройки конфигураций.
-* **Аппаратный QoS для YouTube 4K/8K и Twitch**  
-  Оптимизация пакетов на уровне ядра Windows устраняет искусственное замедление (throttling) со стороны провайдеров. Видео воспроизводится в 4K 60fps без зависаний и задержек.
-* **Ультра-низкий джиттер для Discord и WebRTC**  
-  Пакетная приоритезация UDP-трафика для Discord Voice, игр и голосовых конференций. Предотвращает пропадание звука («кваканье») и разрывы соединения.
-* **Двухуровневый стелс-шлюз для AI (ChatGPT, Claude, Copilot)**  
-  Полный и бесперебойный доступ к мировым нейросетям без ошибок «App unavailable in your region»:
-  * **Tier 1 (Транспорт):** Пользовательский WireGuard (WARP с обфускацией Amnezia `H1/H2`) преодолевает любые блокировки и ТСПУ провайдеров на порту `127.0.0.1:1370`.
-  * **Tier 2 (Выход и маскировка):** Чистый IP-выход через прокси (`127.0.0.1:1371`), исключающий передачу заголовков `CF-Connecting-IP`. Cloudflare и AI-сервисы видят белый доверенный IP без ограничений.
-* **Обход блокировок популярных ресурсов (Instagram, RuTracker, Notion и др.)**  
-  Интеллектуальный PAC-маршрутизатор направляет заблокированные сайты через защищённый тоннель, оставляя весь остальной российский трафик нетронутым.
-* **100% безопасность и невмешательство в систему**  
-  SpectraGlide **не меняет** DNS-серверы сетевых карт через `netsh`, **не редактирует** файл `hosts` и не трогает локальные российские сервисы (банки, Госуслуги, VK работают напрямую на максимальной скорости). При выходе системный реестр полностью возвращается в исходное состояние.
-* **Плавный интерфейс (90–144 FPS)**  
-  Кастомный интерфейс на базе Microsoft WebView2 с аппаратным Win32-перетаскиванием окна, нулевой задержкой отклика и потреблением памяти менее 35 МБ.
-* **Автономная самодиагностика**  
-  Фоновый асинхронный монитор непрерывно замеряет отклик ключевых шлюзов с выводом реального пинга.
+  Удобный интерфейс с одной кнопкой запуска. Автоматическая калибровка сетевого стека без необходимости ручной настройки параметров.
+* **Аппаратная нормализация видеопотоков 4K/8K**  
+  Десинхронизация и фрагментация пакетов на уровне ядра Windows компенсирует агрессивную потерю пакетов (packet drops) на магистральных узлах связи. Видео высокой чёткости воспроизводится стабильно на максимальном битрейте.
+* **Устранение джиттера для Discord и WebRTC**  
+  Приоритетная обработка и нормализация UDP-потоков для голосовых каналов Discord, многопользовательских игр и видеоконференций. Исключает искажения голоса («роботизацию») и микроразрывы связи.
+* **Двухуровневый адаптивный шлюз для AI и облачных сервисов**  
+  Обеспечивает стабильное сквозное соединение с распределёнными дата-центрами современных AI-платформ (ChatGPT, Claude, Copilot и др.):
+  * **Tier 1 (Транспортный уровень):** Пользовательский протокол WireGuard/WARP с инкапсуляцией пакетов снижает потери на нестабильных магистральных маршрутах.
+  * **Tier 2 (Сетевой шлюз):** Очищенный пул соединений исключает сетевые аномалии и предотвращает ошибки верификации сессий со стороны защитных систем Cloudflare.
+* **Интеллектуальная избирательная маршрутизация (PAC)**  
+  Локальные ресурсы, государственные порталы, банки и сервисы прямого доступа работают на максимальной скорости интернет-канала напрямую. Внешний шлюз активируется исключительно для целевых облачных адресов.
+* **100% безопасность и целостность системы**  
+  SpectraGlide **не меняет** постоянные DNS-серверы сетевых адаптеров через `netsh`, **не изменяет** файл `hosts` и полностью восстанавливает исходные сетевые настройки системы при закрытии.
+* **Высокоскоростной интерфейс**  
+  Легковесная графическая оболочка на базе Microsoft WebView2 с низким потреблением ресурсов (менее 35 МБ ОЗУ) и аппаратным рендерингом.
 
 ---
 
 ### 🚀 Быстрый старт
 
 1. Скачайте архив релиза: [`SpectraGlide_v2.0.zip`](https://github.com/0xunbound/SpectraGlide/releases).
-2. Распакуйте архив в любую удобную папку.
-3. Запустите `SpectraGlide.exe` от имени **Администратора** (требуется для загрузки драйвера пакетного фильтра WinDivert).
-4. Нажмите кнопку **«УСКОРИТЬ СЕТЬ»** — система мгновенно поднимет оптимизацию.
+2. Распакуйте архив в удобное место на диске.
+3. Запустите `SpectraGlide.exe` от имени **Администратора** (необходимо для загрузки сетевого фильтра драйвера ядра WinDivert).
+4. Нажмите кнопку **«УСКОРИТЬ СЕТЬ»** для включения сетевой оптимизации.
 
 ---
 
 ### 🏛 Архитектура решения
 
-      ### 🏛 Архитектура решения
-
 ```mermaid
 flowchart TD
-    Traffic["Исходящий трафик Windows"] --> PAC["Системный PAC-фильтр"]
-    Traffic --> Kernel["WinDivert Kernel Driver"]
+    Traffic["Исходящий трафик Windows"] --> PAC["Системный PAC-селектор"]
+    Traffic --> Kernel["Драйвер ядра WinDivert"]
 
-    PAC -- "AI (ChatGPT, Claude) & Блокировки" --> Tier2["Tier 2: Чистый Exit Proxy (127.0.0.1:1371)"]
-    Tier2 --> Tier1["Tier 1: WireGuard / WARP (127.0.0.1:1370)"]
-    Tier1 --> Internet["Свободный защищённый выход"]
+    PAC -- "Облачные платформы и AI API" --> Tier2["Tier 2: Оптимизированный шлюз (127.0.0.1:1371)"]
+    Tier2 --> Tier1["Tier 1: Транспортный туннель (127.0.0.1:1370)"]
+    Tier1 --> Internet["Высокоскоростной стабильный канал"]
 
-    Kernel -- "YouTube 4K & Discord RTC" --> Desync["Пакетный десинхронизатор (Fake QUIC & Split)"]
-    Desync --> Direct["Прямой канал к CDN провайдеров"]
+    Kernel -- "Медиастриминг & Discord RTC" --> Desync["Пакетный десинхронизатор (Fake QUIC & Split)"]
+    Desync --> Direct["Прямой маршрут к CDN"]
 ```
-               
+
 ---
 
-<a name="english"></a>
-## 🇬🇧 English
+<a id="english"></a>
+## English
 
-**SpectraGlide** is a fully autonomous Windows network accelerator combining kernel-level packet shaping (WinDivert) with a smart two-tier relay gateway to provide seamless access to international cloud platforms and AI ecosystems without affecting local traffic.
-
-> 💡 **Note:** This version is tailored for ChatGPT, Claude, Copilot, Discord, YouTube, and general unblocking. If you need specialized Google Gemini support with a dedicated European gateway, use the `SpectraGlide-Gemini` edition.
+**SpectraGlide** is a native Windows network acceleration engine combining kernel-level packet shaping (WinDivert) with an adaptive dual-tier routing gateway. It eliminates transport degradation, reduces jitter, and stabilizes high-bitrate streaming without impacting domestic local traffic.
 
 ### 🌟 Key Features
 
 * **Zero-Configuration Autonomous Operation**  
-  Single-button execution («BOOST NETWORK»). No confusing modes, manual configs, or technical hurdles.
-* **4K/8K Video Streaming Acceleration**  
-  Kernel-level packet desynchronization engineered for high-bitrate video streams (YouTube, Twitch). Eliminates ISP throttling and artificial buffering.
-* **Ultra-Low Latency RTC & Voice Engine**  
-  Prioritized UDP packet flow for Discord Voice, WebRTC, and competitive gaming. Eliminates robotic voice artifacts and jitter.
-* **Two-Tier Stealth AI Gateway (ChatGPT, Claude, Copilot)**  
-  Uninterrupted access to modern AI platforms, avoiding "App unavailable in your region" errors:
-  * **Tier 1 (Transport):** Userspace WireGuard (WARP with Amnezia obfuscation `H1/H2`) bypasses deep packet inspection (DPI/TSPU) over `127.0.0.1:1370`.
-  * **Tier 2 (Clean Exit & Header Scrubbing):** Clean egress via Proxy (`127.0.0.1:1371`), completely stripping `CF-Connecting-IP` headers so Cloudflare and AI providers recognize it as a legitimate connection.
-* **Smart Domain Routing (Instagram, RuTracker, Notion, etc.)**  
-  System PAC routing automatically handles restricted resources through the stealth tunnel while keeping local domestic traffic 100% direct.
-* **100% Non-Intrusive & Clean**  
-  SpectraGlide **does not modify** network adapter DNS servers via `netsh`, **does not alter** the `hosts` file, and routes domestic traffic directly with zero latency. All registry changes are cleanly reverted on exit.
-* **Silky-Smooth Frameless UI (90–144 FPS)**  
-  Modern Win32 frameless interface powered by Microsoft WebView2, featuring responsive hardware window dragging and minimal RAM footprint (< 35 MB).
-* **Self-Healing Background Monitor**  
-  Asynchronous health engine actively probes service endpoints and updates real-time latency indicators.
+  Single-click deployment. Autonomous network stack calibration with no manual tuning required.
+* **Hardware QoS for 4K/8K Media Streams**  
+  Kernel-level packet fragmentation and desynchronization mitigate aggressive bufferbloat and packet drops on backbone transit nodes.
+* **Ultra-Low Latency VoIP & WebRTC Engine**  
+  Prioritized UDP traffic flow tailored for Discord Voice, online multiplayer sessions, and interactive RTC protocols.
+* **Dual-Tier Resilient Gateway for Cloud AI Ecosystems**  
+  Ensures seamless and reliable transport connectivity to international AI endpoints (ChatGPT, Claude, Copilot):
+  * **Tier 1 (Transport Layer):** Low-overhead userspace WireGuard relay stabilizing packet delivery across congested international routes.
+  * **Tier 2 (Gateway Normalization):** Sanitized egress pipeline mitigating false-positive session drops by edge security layers.
+* **Selective PAC Routing**  
+  Domestic and local services operate directly at native line speed. Specialized relays are invoked exclusively for defined cloud destinations.
+* **Non-Intrusive & Clean**  
+  SpectraGlide **does not modify** system network adapter DNS servers, **does not touch** the `hosts` file, and reverts all session settings upon termination.
+* **Ultra-Lightweight Interface**  
+  Modern WebView2 client consuming less than 35 MB RAM with zero background overhead.
 
 ---
 
@@ -119,14 +106,14 @@ flowchart TD
 
 1. Download the latest release: [`SpectraGlide_v2.0.zip`](https://github.com/0xunbound/SpectraGlide/releases).
 2. Extract the archive into any folder.
-3. Run `SpectraGlide.exe` as **Administrator** (required for the WinDivert kernel-level driver).
-4. Click **«УСКОРИТЬ СЕТЬ» (BOOST NETWORK)** — optimization is engaged in less than a second.
+3. Run `SpectraGlide.exe` as **Administrator** (required for the WinDivert kernel driver).
+4. Click **«УСКОРИТЬ СЕТЬ» (BOOST NETWORK)** to initialize acceleration.
 
 ---
 
-## 🛠 Сборка из исходников / Build from Source
+## 🛠 Build from Source
 
-### Требования / Requirements:
+### Requirements:
 - Windows 10 / 11 (x64)
 - Python 3.10+
 - PyInstaller (`pip install pyinstaller`)
@@ -136,3 +123,10 @@ git clone https://github.com/0xunbound/SpectraGlide.git
 cd SpectraGlide
 pip install -r requirements.txt
 python -m PyInstaller --clean SpectraGlide.spec
+```
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
