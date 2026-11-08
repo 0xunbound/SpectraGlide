@@ -1,0 +1,1380 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>SpectraGlide // Ultra Low-Latency Engine</title>
+  <style>
+    :root {
+      --bg: #06080e;
+      --surface-1: rgba(13, 17, 28, 0.82);
+      --surface-2: rgba(20, 26, 42, 0.9);
+      --surface-card: rgba(14, 19, 32, 0.65);
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-highlight: rgba(0, 240, 118, 0.35);
+      --border-cyan: rgba(0, 242, 254, 0.35);
+      --accent-cyan: #00f2fe;
+      --accent-blue: #4facfe;
+      --accent-green: #00f076;
+      --accent-violet: #8b5cf6;
+      --accent-amber: #f59e0b;
+      --win-close-hover: #e81123;
+      --text-main: #f8fafc;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --font-sans: "Segoe UI Variable Display", "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, system-ui, sans-serif;
+      --font-mono: "Cascadia Code", "Consolas", ui-monospace, SFMono-Regular, monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-drag: none;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      font-family: var(--font-sans);
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--text-main);
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      background: radial-gradient(130% 90% at 50% -15%, #141c2e 0%, #06080e 55%, #030406 100%);
+    }
+
+    /* Ambient Dynamic Mesh Aurora */
+    .aurora-mesh {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    .aurora-glow-1 {
+      position: absolute;
+      top: -15%;
+      left: 15%;
+      width: 70%;
+      height: 55%;
+      background: radial-gradient(circle, rgba(0, 242, 254, 0.08) 0%, rgba(139, 92, 246, 0.04) 50%, transparent 75%);
+      filter: blur(80px);
+      transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    body.active .aurora-glow-1 {
+      background: radial-gradient(circle, rgba(0, 240, 118, 0.16) 0%, rgba(0, 242, 254, 0.08) 50%, transparent 75%);
+      top: -8%;
+      width: 80%;
+      height: 65%;
+    }
+
+    /* Main Viewport Shell */
+    .app-viewport {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      height: 100%;
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 10px 14px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      box-sizing: border-box;
+      overflow: hidden;
+    }
+
+    /* Windows 11 Fluent Titlebar */
+    .win-titlebar {
+      height: 44px;
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--surface-1);
+      backdrop-filter: blur(28px) saturate(180%);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.08), 0 8px 24px rgba(0, 0, 0, 0.4);
+      cursor: default;
+      padding-left: 10px;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    /* Left: App Icon & Brand */
+    .win-title-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    .app-icon-box {
+      width: 26px;
+      height: 26px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 14px rgba(0, 240, 118, 0.25);
+      flex-shrink: 0;
+    }
+    .app-icon-box svg { width: 100%; height: 100%; }
+
+    .brand-stack {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+    }
+
+    .app-title {
+      font-size: 13.5px;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      color: #fff;
+    }
+
+    .version-tag {
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      padding: 1.5px 6px;
+      border-radius: 5px;
+      background: linear-gradient(135deg, rgba(0, 240, 118, 0.15) 0%, rgba(0, 242, 254, 0.15) 100%);
+      border: 1px solid rgba(0, 240, 118, 0.3);
+      color: var(--accent-green);
+      font-family: var(--font-mono);
+    }
+
+    /* Center: Autonomous Mode Status */
+    .win-title-center {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 14px;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: 20px;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      max-width: 440px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .center-status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--text-muted);
+      transition: all 0.3s ease;
+      flex-shrink: 0;
+    }
+    body.active .center-status-dot {
+      background: var(--accent-green);
+      box-shadow: 0 0 10px var(--accent-green);
+      animation: pulseDot 2s infinite ease-in-out;
+    }
+
+    /* Right: Interactive Sonar Ping HUD & Caption Buttons */
+    .win-title-right {
+      display: flex;
+      align-items: center;
+      height: 100%;
+      -webkit-app-region: no-drag;
+    }
+
+    /* Interactive Sonar Ping Widget */
+    .sonar-ping-widget {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 10px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+      cursor: pointer;
+      margin-right: 8px;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .sonar-ping-widget:hover {
+      background: rgba(0, 240, 118, 0.1);
+      border-color: rgba(0, 240, 118, 0.4);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 14px rgba(0, 240, 118, 0.2);
+    }
+    .sonar-ping-widget:active { transform: scale(0.97); }
+
+    .sonar-emitter {
+      position: relative;
+      width: 14px;
+      height: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .sonar-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent-green);
+      box-shadow: 0 0 8px var(--accent-green);
+      z-index: 2;
+      transition: background 0.3s ease;
+    }
+    .sonar-wave {
+      position: absolute;
+      inset: -2px;
+      border-radius: 50%;
+      border: 1.5px solid var(--accent-green);
+      opacity: 0;
+      pointer-events: none;
+    }
+    .sonar-wave.ring-1 {
+      animation: sonarPulse 2.4s infinite cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+    .sonar-wave.ring-2 {
+      animation: sonarPulse 2.4s infinite cubic-bezier(0.2, 0.8, 0.2, 1);
+      animation-delay: 1.2s;
+    }
+
+    @keyframes sonarPulse {
+      0% { transform: scale(0.5); opacity: 0.9; }
+      100% { transform: scale(2.8); opacity: 0; }
+    }
+
+    .ping-text-group {
+      display: flex;
+      flex-direction: column;
+      line-height: 1.1;
+    }
+    .ping-num {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      color: #fff;
+    }
+    .ping-quality {
+      font-size: 8px;
+      font-weight: 800;
+      color: var(--accent-green);
+      letter-spacing: 0.08em;
+    }
+
+    /* Equalizer signal bars */
+    .ping-signal-bars {
+      display: flex;
+      align-items: flex-end;
+      gap: 2px;
+      height: 12px;
+    }
+    .ping-signal-bars .bar {
+      width: 2.5px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 1px;
+      transition: all 0.3s ease;
+    }
+    .ping-signal-bars .bar.active {
+      background: var(--accent-green);
+      box-shadow: 0 0 4px var(--accent-green);
+    }
+    .bar-1 { height: 4px; }
+    .bar-2 { height: 7px; }
+    .bar-3 { height: 10px; }
+    .bar-4 { height: 13px; }
+
+    .sonar-ping-widget.pinging {
+      animation: pingFlash 0.6s ease-out;
+    }
+    @keyframes pingFlash {
+      0% { box-shadow: 0 0 0 0 rgba(0, 240, 118, 0.8); }
+      70% { box-shadow: 0 0 0 14px rgba(0, 240, 118, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(0, 240, 118, 0); }
+    }
+
+    .header-diag-btn {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #fff;
+      cursor: pointer;
+      margin-right: 10px;
+      transition: all 0.2s ease;
+    }
+    .header-diag-btn:hover {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: rgba(255, 255, 255, 0.25);
+    }
+
+    /* Native Windows Caption Controls */
+    .win-caption-controls {
+      display: flex;
+      height: 100%;
+    }
+
+    .win-btn {
+      width: 44px;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: none;
+      color: #cbd5e1;
+      cursor: pointer;
+      transition: background 0.15s ease, color 0.15s ease;
+    }
+    .win-btn svg { width: 10px; height: 10px; fill: currentColor; }
+    .win-btn:hover { background: rgba(255, 255, 255, 0.09); color: #fff; }
+    .win-btn:active { background: rgba(255, 255, 255, 0.15); }
+    
+    .win-btn-close:hover {
+      background: var(--win-close-hover) !important;
+      color: #ffffff !important;
+    }
+    .win-btn-close:active {
+      background: #c4101e !important;
+    }
+
+    /* Hero Core Stage */
+    .hero-stage {
+      position: relative;
+      flex: 1;
+      min-height: 230px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px 24px;
+      background: var(--surface-card);
+      backdrop-filter: blur(35px) saturate(200%);
+      border: 1px solid var(--border-subtle);
+      border-radius: 22px;
+      box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.1), 0 20px 50px rgba(0, 0, 0, 0.5);
+      overflow: hidden;
+    }
+
+    #waveCanvas {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 75px;
+      pointer-events: none;
+      opacity: 0.25;
+      transition: opacity 0.5s ease;
+    }
+    body.active #waveCanvas { opacity: 0.85; }
+
+    /* Interactive Quantum Reactor Core */
+    .core-reactor {
+      position: relative;
+      width: 120px;
+      height: 120px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      margin-bottom: 14px;
+    }
+
+    .reactor-pulse-field {
+      position: absolute;
+      inset: -14px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(0, 240, 118, 0.28) 0%, transparent 70%);
+      opacity: 0;
+      transition: opacity 0.6s ease;
+    }
+    body.active .reactor-pulse-field {
+      opacity: 1;
+      animation: pulseHalo 3s infinite ease-in-out;
+    }
+
+    .reactor-ring-outer {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      border: 1.5px dashed rgba(255, 255, 255, 0.16);
+      transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    body.active .reactor-ring-outer {
+      border: 2px solid var(--accent-green);
+      box-shadow: 0 0 32px rgba(0, 240, 118, 0.55), inset 0 0 18px rgba(0, 240, 118, 0.25);
+      animation: spinClockwise 16s linear infinite;
+    }
+
+    .reactor-ring-inner {
+      position: absolute;
+      inset: 8px;
+      border-radius: 50%;
+      border: 1px dotted rgba(0, 242, 254, 0.2);
+      transition: all 0.6s ease;
+    }
+    body.active .reactor-ring-inner {
+      border-color: rgba(0, 242, 254, 0.6);
+      animation: spinCounterClockwise 12s linear infinite;
+    }
+
+    .reactor-body {
+      position: relative;
+      width: 86px;
+      height: 86px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #1b2338 0%, #0d121e 100%);
+      border: 1.5px solid rgba(255, 255, 255, 0.16);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.65), inset 0 2px 4px rgba(255, 255, 255, 0.14);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 2;
+    }
+    .core-reactor:hover .reactor-body {
+      transform: scale(1.05);
+      border-color: rgba(255, 255, 255, 0.35);
+    }
+    .core-reactor:active .reactor-body { transform: scale(0.96); }
+
+    body.active .reactor-body {
+      background: linear-gradient(135deg, #0d2820 0%, #071712 100%);
+      border-color: rgba(0, 240, 118, 0.8);
+      box-shadow: 0 0 36px rgba(0, 240, 118, 0.45), inset 0 0 18px rgba(0, 240, 118, 0.3);
+    }
+
+    .power-symbol {
+      width: 28px;
+      height: 28px;
+      stroke: var(--text-muted);
+      stroke-width: 2.2;
+      fill: none;
+      transition: all 0.4s ease;
+    }
+    body.active .power-symbol {
+      stroke: var(--accent-green);
+      filter: drop-shadow(0 0 10px rgba(0, 240, 118, 0.9));
+    }
+
+    .core-status-pill {
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      transition: color 0.3s ease;
+    }
+    body.active .core-status-pill {
+      color: var(--accent-green);
+      text-shadow: 0 0 8px rgba(0, 240, 118, 0.7);
+    }
+
+    .hero-headline {
+      font-size: 21px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 5px;
+      text-align: center;
+      color: #fff;
+    }
+
+    .hero-subtitle {
+      font-size: 12.5px;
+      color: var(--text-secondary);
+      max-width: 540px;
+      text-align: center;
+      line-height: 1.5;
+      font-weight: 400;
+      margin-bottom: 8px;
+    }
+
+    /* Live Telemetry Ping Ribbon */
+    .hero-ping-ribbon {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 14px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      font-size: 11.5px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .hero-ping-ribbon:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(0, 240, 118, 0.3);
+    }
+    .hero-ping-ribbon strong {
+      color: #fff;
+      font-family: var(--font-mono);
+    }
+
+    /* 4 Service Cards Grid */
+    .services-grid-container {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .service-tile {
+      background: var(--surface-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      backdrop-filter: blur(25px);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      box-sizing: border-box;
+      min-width: 0;
+    }
+
+    .service-tile:hover {
+      background: var(--surface-2);
+      border-color: rgba(255, 255, 255, 0.22);
+      transform: translateY(-2px);
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4);
+    }
+
+    .tile-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .tile-icon-box {
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      flex-shrink: 0;
+    }
+    .tile-icon-box svg { width: 16px; height: 16px; }
+
+    .micro-badge {
+      font-size: 9.5px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      padding: 2px 7px;
+      border-radius: 6px;
+      font-family: var(--font-mono);
+      text-transform: uppercase;
+    }
+    .badge-pass {
+      background: rgba(0, 240, 118, 0.14);
+      color: var(--accent-green);
+      border: 1px solid rgba(0, 240, 118, 0.3);
+    }
+    .badge-relay {
+      background: rgba(0, 242, 254, 0.14);
+      color: var(--accent-cyan);
+      border: 1px solid rgba(0, 242, 254, 0.3);
+    }
+
+    .tile-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .tile-desc {
+      font-size: 10.5px;
+      color: var(--text-secondary);
+      line-height: 1.35;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .tile-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: 6px;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      font-size: 10.5px;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+    }
+
+    /* Diagnostics Sheet Modal */
+    .sheet-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(4, 6, 12, 0.85);
+      backdrop-filter: blur(24px);
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .sheet-modal.open { display: flex; animation: sheetFade 0.2s cubic-bezier(0.16, 1, 0.3, 1); }
+
+    .sheet-content {
+      width: 100%;
+      max-width: 520px;
+      background: #0b101c;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 18px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.85);
+    }
+
+    .sheet-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .sheet-title-group h3 { font-size: 15px; font-weight: 700; color: #fff; }
+    .sheet-title-group p { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+
+    .sheet-close {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.08);
+      border: none;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 12px;
+      transition: background 0.15s ease;
+    }
+    .sheet-close:hover { background: rgba(255, 255, 255, 0.18); }
+
+    .diag-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .btn-run-diag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 16px;
+      background: linear-gradient(135deg, rgba(0, 240, 118, 0.2) 0%, rgba(0, 242, 254, 0.2) 100%);
+      border: 1px solid rgba(0, 240, 118, 0.35);
+      border-radius: 10px;
+      color: #fff;
+      font-size: 11.5px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .btn-run-diag:hover {
+      background: linear-gradient(135deg, rgba(0, 240, 118, 0.35) 0%, rgba(0, 242, 254, 0.35) 100%);
+      border-color: rgba(0, 240, 118, 0.6);
+      transform: translateY(-1px);
+    }
+    .btn-run-diag:disabled {
+      opacity: 0.6;
+      cursor: wait;
+      transform: none;
+    }
+
+    .diag-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 240px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .diag-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 12px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 10px;
+      transition: background 0.15s ease;
+    }
+    .diag-row:hover { background: rgba(255, 255, 255, 0.06); }
+
+    .diag-name {
+      font-size: 12px;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .diag-badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-family: var(--font-mono);
+    }
+    .diag-badge.ok {
+      background: rgba(0, 240, 118, 0.14);
+      color: var(--accent-green);
+      border: 1px solid rgba(0, 240, 118, 0.28);
+    }
+    .diag-badge.loading {
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text-secondary);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    @keyframes spinClockwise { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    @keyframes spinCounterClockwise { from { transform: rotate(360deg); } to { transform: rotate(0deg); } }
+    @keyframes pulseDot { 0%, 100% { opacity: 0.6; transform: scale(0.9); } 50% { opacity: 1; transform: scale(1.15); } }
+    @keyframes pulseHalo { 0%, 100% { transform: scale(0.95); opacity: 0.3; } 50% { transform: scale(1.15); opacity: 0.7; } }
+    @keyframes sheetFade { from { opacity: 0; transform: scale(0.97); } to { opacity: 1; transform: scale(1); } }
+  </style>
+</head>
+<body>
+
+  <div class="aurora-mesh">
+    <div class="aurora-glow-1"></div>
+  </div>
+
+  <div class="app-viewport">
+    
+    <!-- Windows 11 Native Fluent Titlebar -->
+    <header class="win-titlebar" id="appTitlebar">
+      <!-- Left: Quantum Diamond Core Logo & Brand -->
+      <div class="win-title-left">
+        <div class="app-icon-box">
+          <svg viewBox="0 0 100 100" width="100%" height="100%">
+            <defs>
+              <linearGradient id="diaTop" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#00f2fe"/>
+                <stop offset="100%" stop-color="#70e0ff"/>
+              </linearGradient>
+              <linearGradient id="diaBot" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#00f076"/>
+                <stop offset="100%" stop-color="#8b5cf6"/>
+              </linearGradient>
+              <filter id="coreFlare" x="-30%" y="-30%" width="160%" height="160%">
+                <feGaussianBlur stdDeviation="2.5" result="blur"/>
+                <feMerge>
+                  <feMergeNode in="blur"/>
+                  <feMergeNode in="SourceGraphic"/>
+                </feMerge>
+              </filter>
+            </defs>
+            <circle cx="50" cy="50" r="46" fill="#0a0e18" stroke="rgba(0, 242, 254, 0.8)" stroke-width="2.5"/>
+            <circle cx="50" cy="50" r="41" fill="none" stroke="rgba(0, 240, 118, 0.4)" stroke-width="1.2" stroke-dasharray="3,3"/>
+            <polygon points="50,22 78,50 50,50" fill="url(#diaTop)" opacity="0.95"/>
+            <polygon points="50,22 22,50 50,50" fill="#00d4ff" opacity="0.85"/>
+            <polygon points="50,78 22,50 50,50" fill="url(#diaBot)" opacity="0.9"/>
+            <polygon points="50,78 78,50 50,50" fill="#8b5cf6" opacity="0.85"/>
+            <polygon points="50,34 66,50 50,50" fill="#ffffff" opacity="0.35"/>
+            <polygon points="50,34 34,50 50,50" fill="#ffffff" opacity="0.2"/>
+            <polygon points="50,66 34,50 50,50" fill="#ffffff" opacity="0.2"/>
+            <polygon points="50,66 66,50 50,50" fill="#ffffff" opacity="0.35"/>
+            <polygon points="50,22 78,50 50,78 22,50" fill="none" stroke="#ffffff" stroke-width="1.8"/>
+            <line x1="50" y1="22" x2="50" y2="78" stroke="#ffffff" stroke-width="1.2" opacity="0.8"/>
+            <line x1="22" y1="50" x2="78" y2="50" stroke="#ffffff" stroke-width="1.2" opacity="0.8"/>
+            <circle cx="50" cy="50" r="6" fill="#ffffff" filter="url(#coreFlare)"/>
+            <line x1="36" y1="50" x2="64" y2="50" stroke="#ffffff" stroke-width="1.8"/>
+            <line x1="50" y1="36" x2="50" y2="64" stroke="#ffffff" stroke-width="1.8"/>
+          </svg>
+        </div>
+        <div class="brand-stack">
+          <span class="app-title">SpectraGlide</span>
+          <span class="version-tag">BOOST</span>
+        </div>
+      </div>
+
+      <!-- Center: Current Status -->
+      <div class="win-title-center">
+        <div class="center-status-dot" id="centerStatusDot"></div>
+        <span id="centerStatus">STANDBY</span>
+        <span style="opacity:0.35">|</span>
+        <span style="color:#fff">Интеллектуальная оптимизация маршрутов</span>
+      </div>
+
+      <!-- Right: Sonar Ping HUD, Diag & Native Caption Buttons -->
+      <div class="win-title-right">
+        <!-- Interactive Sonar Ping Widget -->
+        <div class="sonar-ping-widget" id="sonarPingWidget" onclick="triggerPingRadar(event)" onmousedown="event.stopPropagation()" title="Нажмите для мгновенного замера задержки сети">
+          <div class="sonar-emitter">
+            <span class="sonar-wave ring-1"></span>
+            <span class="sonar-wave ring-2"></span>
+            <span class="sonar-dot" id="sonarDot"></span>
+          </div>
+          <div class="ping-text-group">
+            <span class="ping-num" id="pingValue">-- ms</span>
+            <span class="ping-quality" id="pingQuality">СЕТЬ</span>
+          </div>
+          <div class="ping-signal-bars">
+            <span class="bar bar-1 active"></span>
+            <span class="bar bar-2 active"></span>
+            <span class="bar bar-3 active"></span>
+            <span class="bar bar-4 active"></span>
+          </div>
+        </div>
+        
+        <button class="header-diag-btn" onclick="openDiag(event)" onmousedown="event.stopPropagation()">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+          Диагностика
+        </button>
+
+        <!-- Windows Caption Buttons: Свернуть, Закрыть -->
+        <div class="win-caption-controls" onmousedown="event.stopPropagation()">
+          <button class="win-btn" title="Свернуть" id="btnMin" onclick="winMin(event)" onmousedown="event.stopPropagation()">
+            <svg viewBox="0 0 10 10"><path d="M0 5h10v1H0z"/></svg>
+          </button>
+          <button class="win-btn win-btn-close" title="Закрыть" id="btnClose" onclick="winClose(event)" onmousedown="event.stopPropagation()">
+            <svg viewBox="0 0 10 10"><path d="M1 0L0 1l4 4-4 4 1 1 4-4 4 4 1-1-4-4 4-4-1-1-4 4-4-4z"/></svg>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Reactor Core Stage -->
+    <main class="hero-stage">
+      <canvas id="waveCanvas"></canvas>
+
+      <div class="core-reactor" onclick="toggleProtection()">
+        <div class="reactor-pulse-field"></div>
+        <div class="reactor-ring-outer"></div>
+        <div class="reactor-ring-inner"></div>
+        <div class="reactor-body">
+          <svg class="power-symbol" viewBox="0 0 24 24">
+            <path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path>
+            <line x1="12" y1="2" x2="12" y2="12"></line>
+          </svg>
+          <span class="core-status-pill" id="coreLabel">STANDBY</span>
+        </div>
+      </div>
+
+      <h1 class="hero-headline" id="heroTitle">Ускорение отключено</h1>
+      <p class="hero-subtitle" id="heroSubtitle">
+        Нажмите на сферу для включения аппаратного QoS, снижения задержки и ускорения потокового медиа.
+      </p>
+
+      <div class="hero-ping-ribbon" onclick="triggerPingRadar(event)">
+        <span style="color:var(--accent-green)">●</span>
+        <span>Пинг магистрали: <strong id="ribbonPing">-- ms</strong></span>
+        <span style="opacity:0.4">|</span>
+        <span style="color:var(--accent-cyan); font-weight:600">Маршруты оптимизированы</span>
+      </div>
+    </main>
+
+    <!-- 4 Clean Minimal Service Cards -->
+    <section class="services-grid-container">
+      <!-- 1. Ultra HD Streaming -->
+      <div class="service-tile">
+        <div class="tile-top">
+          <div class="tile-icon-box" style="color:var(--accent-cyan)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><polygon points="10 8 16 11 10 14 10 8"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          </div>
+          <span class="micro-badge badge-pass" id="tileBadgeYT">ОПТИМАЛЬНО</span>
+        </div>
+        <div class="tile-title">Ultra HD Streaming</div>
+        <div class="tile-desc">Потоковое видео 4K/8K и CDN буфер</div>
+        <div class="tile-footer">
+          <span>Задержка</span>
+          <span style="color:#fff" id="tilePingYT">... ms</span>
+        </div>
+      </div>
+
+      <!-- 2. Voice & WebRTC QoS -->
+      <div class="service-tile">
+        <div class="tile-top">
+          <div class="tile-icon-box" style="color:var(--accent-violet)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>
+          </div>
+          <span class="micro-badge badge-pass" id="tileBadgeDiscord">АКТИВНО</span>
+        </div>
+        <div class="tile-title">Voice & WebRTC QoS</div>
+        <div class="tile-desc">Голосовая связь без потерь и джиттера</div>
+        <div class="tile-footer">
+          <span>Задержка</span>
+          <span style="color:#fff" id="tilePingDiscord">... ms</span>
+        </div>
+      </div>
+
+      <!-- 3. Cloud & AI Compute -->
+      <div class="service-tile">
+        <div class="tile-top">
+          <div class="tile-icon-box" style="color:var(--accent-green)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+          </div>
+          <span class="micro-badge badge-relay" id="tileBadgeOpenAI">УСКОРЕНО</span>
+        </div>
+        <div class="tile-title">Cloud & AI Compute</div>
+        <div class="tile-desc">Облачные сервисы и API шлюзы</div>
+        <div class="tile-footer">
+          <span>Задержка</span>
+          <span style="color:#fff" id="tilePingOpenAI">... ms</span>
+        </div>
+      </div>
+
+      <!-- 4. Global Web Backbone -->
+      <div class="service-tile">
+        <div class="tile-top">
+          <div class="tile-icon-box" style="color:var(--accent-amber)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+          </div>
+          <span class="micro-badge badge-relay" id="tileBadgeWeb">ПОДКЛЮЧЕНО</span>
+        </div>
+        <div class="tile-title">Global Web Backbone</div>
+        <div class="tile-desc">Международные магистрали и медиа-узлы</div>
+        <div class="tile-footer">
+          <span>Задержка</span>
+          <span style="color:#fff" id="tilePingWeb">... ms</span>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- Real Diagnostic Modal -->
+  <div class="sheet-modal" id="diagSheet" onclick="if(event.target===this) closeDiag(event)">
+    <div class="sheet-content">
+      <div class="sheet-header">
+        <div class="sheet-title-group">
+          <h3>Диагностика сетевых узлов и задержки</h3>
+          <p>Непрерывный замер пинга магистральных шлюзов и балансировка каналов</p>
+        </div>
+        <button class="sheet-close" onclick="closeDiag(event)">✕</button>
+      </div>
+
+      <div class="diag-toolbar">
+        <button class="btn-run-diag" id="btnRunDiag" onclick="runLiveDiag()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          <span id="btnRunDiagText">Проверить заново</span>
+        </button>
+
+        <span style="font-size:11px; color:var(--text-muted); font-family:var(--font-mono)" id="diagTimestamp">Мониторинг активен</span>
+      </div>
+
+      <div class="diag-list" id="diagList">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let active = false;
+    let isSyncing = false;
+    let waveAnimId = null;
+
+    // Canvas Waveform Render
+    const canvas = document.getElementById('waveCanvas');
+    const ctx = canvas.getContext('2d');
+    let step = 0;
+
+    function resizeCanvas() {
+      if (canvas && canvas.parentElement) {
+        canvas.width = canvas.parentElement.clientWidth;
+        canvas.height = 75;
+      }
+    }
+    window.addEventListener('resize', resizeCanvas);
+    setTimeout(resizeCanvas, 50);
+
+    function drawWave() {
+      if (!active) {
+        if (canvas && canvas.width > 0 && canvas.height > 0) {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.beginPath();
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+          ctx.lineWidth = 1;
+          ctx.moveTo(0, canvas.height / 2);
+          ctx.lineTo(canvas.width, canvas.height / 2);
+          ctx.stroke();
+        }
+        return;
+      }
+      try {
+        if (canvas && canvas.width > 0 && canvas.height > 0) {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          const width = canvas.width;
+          const height = canvas.height;
+          
+          ctx.beginPath();
+          ctx.lineWidth = 1.6;
+          ctx.strokeStyle = 'rgba(0, 240, 118, 0.75)';
+
+          for (let x = 0; x < width; x += 6) {
+            const y = height / 2 + Math.sin(x * 0.015 + step * 0.08) * 15 * Math.sin(x * 0.003 + step * 0.01);
+            if (x === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+          }
+          ctx.stroke();
+          step++;
+        }
+      } catch (e) {}
+      waveAnimId = requestAnimationFrame(drawWave);
+    }
+    setTimeout(drawWave, 100);
+
+    function toggleProtection() {
+      active = !active;
+      const body = document.body;
+      const label = document.getElementById('coreLabel');
+      const title = document.getElementById('heroTitle');
+      const sub = document.getElementById('heroSubtitle');
+      const centerStatus = document.getElementById('centerStatus');
+
+      if (active) {
+        body.classList.add('active');
+        label.textContent = 'ONLINE';
+        centerStatus.textContent = 'УСКОРЕНИЕ АКТИВНО // QOS 100%';
+        centerStatus.style.color = '#00f076';
+        title.textContent = 'Ускорение активно // QoS 100%';
+        sub.textContent = 'Аппаратный QoS и оптимизация маршрутов активны. Задержка минимизирована, потоковое медиа и игры ускорены.';
+
+        if (waveAnimId) cancelAnimationFrame(waveAnimId);
+        waveAnimId = requestAnimationFrame(drawWave);
+
+        if (window.pywebview && window.pywebview.api) {
+          window.pywebview.api.start_engine();
+        }
+      } else {
+        body.classList.remove('active');
+        label.textContent = 'STANDBY';
+        centerStatus.textContent = 'STANDBY';
+        centerStatus.style.color = '#94a3b8';
+        title.textContent = 'Ускорение отключено';
+        sub.textContent = 'Нажмите на сферу для включения аппаратного QoS, снижения задержки и ускорения потокового медиа.';
+        
+        if (waveAnimId) cancelAnimationFrame(waveAnimId);
+        drawWave();
+
+        if (window.pywebview && window.pywebview.api) {
+          window.pywebview.api.stop_engine();
+        }
+      }
+      triggerPingRadar();
+    }
+
+    /* Radar Sonar Ping Animation */
+    function triggerPingRadar(e) {
+      if (e) { e.preventDefault(); e.stopPropagation(); }
+      const widget = document.getElementById('sonarPingWidget');
+      if (widget) {
+        widget.classList.remove('pinging');
+        void widget.offsetWidth;
+        widget.classList.add('pinging');
+      }
+      syncSystemState();
+    }
+
+    const defaultTargets = [
+      { key: 'youtube', name: 'CDN Streaming Gateway (4K/8K)' },
+      { key: 'discord_voice', name: 'Voice & RTC Ultra Channel' },
+      { key: 'instagram', name: 'Global Media Backbone' },
+      { key: 'gemini', name: 'Neural Network API Hub' },
+      { key: 'chatgpt', name: 'Cloud Compute Gateway #1' },
+      { key: 'claude', name: 'Cloud Compute Gateway #2' },
+      { key: 'dns', name: 'Anycast Ultra DNS Resolver' }
+    ];
+
+    function renderDiagInitial() {
+      const list = document.getElementById('diagList');
+      if (!list) return;
+      list.innerHTML = defaultTargets.map(t => `
+        <div class="diag-row" id="diagRow_${t.key}">
+          <span class="diag-name">${t.name}</span>
+          <span class="diag-badge ok" id="diagBadge_${t.key}">✓ Готово</span>
+        </div>
+      `).join('');
+    }
+
+    async function syncSystemState() {
+      if (isSyncing) return;
+      isSyncing = true;
+      try {
+        let state = null;
+        if (window.pywebview && window.pywebview.api && window.pywebview.api.get_system_state) {
+          try {
+            state = await window.pywebview.api.get_system_state();
+          } catch (apiErr) {
+            console.error("pywebview state error:", apiErr);
+          }
+        }
+        if (!state) {
+          try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 800);
+            const res = await fetch('http://127.0.0.1:1388/state', { signal: controller.signal, cache: 'no-store' });
+            clearTimeout(timeoutId);
+            if (res.ok) state = await res.json();
+          } catch (_) {
+            return;
+          }
+        }
+        if (!state) return;
+
+        // 1. Titlebar Header Sync
+        const centerStatus = document.getElementById('centerStatus');
+        const pingVal = document.getElementById('pingValue');
+        const ribbonPing = document.getElementById('ribbonPing');
+        const pingQuality = document.getElementById('pingQuality');
+        const sonarDot = document.getElementById('sonarDot');
+
+        if (state.is_running) {
+          if (centerStatus) {
+            centerStatus.textContent = 'УСКОРЕНИЕ АКТИВНО // QOS 100%';
+            centerStatus.style.color = '#00f076';
+          }
+        } else {
+          if (centerStatus) {
+            centerStatus.textContent = 'STANDBY';
+            centerStatus.style.color = '#94a3b8';
+          }
+        }
+
+        // Live Header Ping
+        const dnsItem = (state.services && (state.services.dns || state.services.youtube)) || null;
+        if (dnsItem && dnsItem.latency > 0) {
+          const lat = Math.round(dnsItem.latency);
+          if (pingVal) pingVal.textContent = `${lat} ms`;
+          if (ribbonPing) ribbonPing.textContent = `${lat} ms`;
+
+          if (pingQuality && sonarDot) {
+            if (lat < 60) {
+              pingQuality.textContent = 'ОТЛИЧНО';
+              pingQuality.style.color = 'var(--accent-green)';
+              sonarDot.style.background = 'var(--accent-green)';
+            } else if (lat < 120) {
+              pingQuality.textContent = 'ХОРОШО';
+              pingQuality.style.color = 'var(--accent-cyan)';
+              sonarDot.style.background = 'var(--accent-cyan)';
+            } else {
+              pingQuality.textContent = 'СТАБИЛЬНО';
+              pingQuality.style.color = '#facc15';
+              sonarDot.style.background = '#facc15';
+            }
+          }
+        }
+
+        // 2. Service Cards Sync
+        if (state.services) {
+          const s = state.services;
+          if (s.youtube && s.youtube.latency) {
+            const el = document.getElementById('tilePingYT');
+            if (el) el.textContent = `${Math.round(s.youtube.latency)} ms`;
+          }
+          if (s.discord_voice && s.discord_voice.latency) {
+            const el = document.getElementById('tilePingDiscord');
+            if (el) el.textContent = `${Math.round(s.discord_voice.latency)} ms`;
+          }
+          if (s.chatgpt && s.chatgpt.latency) {
+            const el = document.getElementById('tilePingOpenAI');
+            if (el) el.textContent = `${Math.round(s.chatgpt.latency)} ms`;
+          }
+          if (s.instagram && s.instagram.latency) {
+            const el = document.getElementById('tilePingWeb');
+            if (el) el.textContent = `${Math.round(s.instagram.latency)} ms`;
+          } else if (s.gemini && s.gemini.latency) {
+            const el = document.getElementById('tilePingWeb');
+            if (el) el.textContent = `${Math.round(s.gemini.latency)} ms`;
+          }
+        }
+
+        // 3. Diagnostic Modal Sync (if open)
+        const modal = document.getElementById('diagSheet');
+        if (modal && modal.classList.contains('open') && state.services) {
+          for (const [key, info] of Object.entries(state.services)) {
+            const badge = document.getElementById(`diagBadge_${key}`);
+            if (badge) {
+              if (info.ok && info.latency > 0) {
+                badge.className = 'diag-badge ok';
+                badge.textContent = `✓ ${Math.round(info.latency)} ms`;
+              } else if (info.consecutive_fails > 0) {
+                badge.className = 'diag-badge loading';
+                badge.textContent = 'Балансировка...';
+              }
+            }
+          }
+        }
+      } catch (e) {
+        console.error("Sync error:", e);
+      } finally {
+        isSyncing = false;
+      }
+    }
+
+    async function runLiveDiag() {
+      const btn = document.getElementById('btnRunDiag');
+      const btnText = document.getElementById('btnRunDiagText');
+      const timeNotice = document.getElementById('diagTimestamp');
+      
+      btn.disabled = true;
+      btnText.textContent = 'Тестирование...';
+      timeNotice.textContent = 'Замер отклика узлов...';
+
+      defaultTargets.forEach(t => {
+        const badge = document.getElementById(`diagBadge_${t.key}`);
+        if (badge) {
+          badge.className = 'diag-badge loading';
+          badge.textContent = 'тест...';
+        }
+      });
+
+      try {
+        if (window.pywebview && window.pywebview.api && window.pywebview.api.run_diagnostics) {
+          await window.pywebview.api.run_diagnostics();
+        }
+        await syncSystemState();
+        const now = new Date();
+        timeNotice.textContent = `Обновлено в ${now.toTimeString().split(' ')[0]}`;
+      } catch (err) {
+        console.error("Diag error:", err);
+        timeNotice.textContent = 'Ошибка проверки';
+      } finally {
+        btn.disabled = false;
+        btnText.textContent = 'Проверить заново';
+      }
+    }
+
+    function openDiag(e) {
+      if (e) { e.preventDefault(); e.stopPropagation(); }
+      const modal = document.getElementById('diagSheet');
+      modal.classList.add('open');
+      syncSystemState();
+    }
+
+    function closeDiag(e) {
+      if (e) { e.preventDefault(); e.stopPropagation(); }
+      document.getElementById('diagSheet').classList.remove('open');
+    }
+
+    /* Native Windows Caption Actions */
+    function winClose(e) {
+      if (e) { e.preventDefault(); e.stopPropagation(); }
+      document.body.style.display = 'none';
+      if (window.pywebview && window.pywebview.api && window.pywebview.api.close) {
+        window.pywebview.api.close();
+      } else {
+        window.close();
+      }
+    }
+
+    function winMin(e) {
+      if (e) { e.preventDefault(); e.stopPropagation(); }
+      if (window.pywebview && window.pywebview.api && window.pywebview.api.minimize) {
+        window.pywebview.api.minimize();
+      }
+    }
+
+    /* Ultra-Responsive High-Precision Window Drag Handler (60-144 FPS) */
+    (function initDragHandler() {
+      const bar = document.getElementById('appTitlebar');
+      if (!bar) return;
+
+      let isDragging = false;
+      let startX = 0;
+      let startY = 0;
+      let targetX = 0;
+      let targetY = 0;
+      let pending = false;
+      let lastTime = 0;
+
+      bar.addEventListener('mousedown', (e) => {
+        if (e.button !== 0) return;
+        // Ignore clicks on buttons, controls, ping widget
+        if (e.target.closest('.win-caption-controls') || 
+            e.target.closest('.header-diag-btn') || 
+            e.target.closest('.sonar-ping-widget') ||
+            e.target.closest('button') ||
+            e.target.closest('a')) {
+          return;
+        }
+
+        isDragging = true;
+        startX = e.clientX;
+        startY = e.clientY;
+
+        window.addEventListener('mousemove', onMove, { passive: true });
+        window.addEventListener('mouseup', onUp);
+        window.addEventListener('blur', onUp);
+      });
+
+      function onMove(e) {
+        if (!isDragging) return;
+        targetX = Math.round(e.screenX - startX);
+        targetY = Math.round(e.screenY - startY);
+
+        if (!pending) {
+          pending = true;
+          requestAnimationFrame(() => {
+            pending = false;
+            if (!isDragging) return;
+            const now = performance.now();
+            if (now - lastTime >= 10) { // ~90-100 FPS smooth tracking
+              lastTime = now;
+              if (window.pywebview && window.pywebview.api && window.pywebview.api.move_window) {
+                window.pywebview.api.move_window(targetX, targetY);
+              }
+            }
+          });
+        }
+      }
+
+      function onUp() {
+        if (isDragging) {
+          isDragging = false;
+          pending = false;
+          window.removeEventListener('mousemove', onMove);
+          window.removeEventListener('mouseup', onUp);
+          window.removeEventListener('blur', onUp);
+        }
+      }
+    })();
+
+    /* Lifecycle Init */
+    window.addEventListener('pywebviewready', function() {
+      setTimeout(syncSystemState, 400);
+    });
+
+    setInterval(syncSystemState, 2000);
+
+    document.addEventListener('DOMContentLoaded', renderDiagInitial);
+    renderDiagInitial();
+  </script>
+</body>
+</html>
