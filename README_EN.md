@@ -4,6 +4,7 @@
 
 [![Platform](https://img.shields.io/badge/Platform-Windows%2010%20%2F%2011-blue.svg)](https://github.com/0xunbound/SpectraGlide)
 [![Release](https://img.shields.io/badge/Release-v2.0-green.svg)](https://github.com/0xunbound/SpectraGlide/releases)
+[![VirusTotal](https://img.shields.io/badge/VirusTotal-Clean%20Scan-brightgreen.svg?logo=virustotal)](https://www.virustotal.com/gui/file/e371ed296463feb59bb80a62aee4c4aaf9d82435697dad0623c3f48a0180efdc?nocache=1)
 [![License](https://img.shields.io/badge/License-MIT-purple.svg)](LICENSE)
 
 ### 📥 Direct Download / Быстрая загрузка
