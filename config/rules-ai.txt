@@ -1,0 +1,17 @@
+alkalimakersuite-pa.clients6.google.com
+anthropic.com
+api.anthropic.com
+api.openai.com
+auth0.openai.com
+cdn.oaistatic.com
+challenges.cloudflare.com
+chatgpt.com
+claude.ai
+copilot.microsoft.com
+gemini.google.com
+generativelanguage.googleapis.com
+kimi.ai
+kimi.moonshot.cn
+moonshot.cn
+openai.com
+perplexity.ai

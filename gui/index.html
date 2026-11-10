@@ -1,0 +1,1740 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>SpectraGlide // Ultra Low-Latency Engine</title>
+  <style>
+    :root {
+      --bg: #06080e;
+      --surface-1: rgba(13, 17, 28, 0.82);
+      --surface-2: rgba(20, 26, 42, 0.9);
+      --surface-card: rgba(14, 19, 32, 0.65);
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-highlight: rgba(0, 240, 118, 0.35);
+      --border-cyan: rgba(0, 242, 254, 0.35);
+      --accent-cyan: #00f2fe;
+      --accent-blue: #4facfe;
+      --accent-green: #00f076;
+      --accent-violet: #8b5cf6;
+      --accent-amber: #f59e0b;
+      --win-close-hover: #e81123;
+      --text-main: #f8fafc;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --font-sans: "Segoe UI Variable Display", "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, system-ui, sans-serif;
+      --font-mono: "Cascadia Code", "Consolas", ui-monospace, SFMono-Regular, monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-drag: none;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      font-family: var(--font-sans);
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--text-main);
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      background: radial-gradient(130% 90% at 50% -15%, #141c2e 0%, #06080e 55%, #030406 100%);
+    }
+
+    /* Ambient Dynamic Mesh Aurora */
+    .aurora-mesh {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    .aurora-glow-1 {
+      position: absolute;
+      top: -15%;
+      left: 15%;
+      width: 70%;
+      height: 55%;
+      background: radial-gradient(circle, rgba(0, 242, 254, 0.08) 0%, rgba(139, 92, 246, 0.04) 50%, transparent 75%);
+      filter: blur(80px);
+      transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    body.active .aurora-glow-1 {
+      background: radial-gradient(circle, rgba(0, 240, 118, 0.16) 0%, rgba(0, 242, 254, 0.08) 50%, transparent 75%);
+      top: -8%;
+      width: 80%;
+      height: 65%;
+    }
+
+    /* Main Viewport Shell */
+    .app-viewport {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      height: 100%;
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 10px 14px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      box-sizing: border-box;
+      overflow: hidden;
+    }
+
+    /* Windows 11 Fluent Titlebar */
+    .win-titlebar {
+      height: 44px;
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--surface-1);
+      backdrop-filter: blur(28px) saturate(180%);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.08), 0 8px 24px rgba(0, 0, 0, 0.4);
+      cursor: default;
+      padding-left: 10px;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    /* Left: App Icon & Brand */
+    .win-title-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    .app-icon-box {
+      width: 26px;
+      height: 26px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 14px rgba(0, 240, 118, 0.25);
+      flex-shrink: 0;
+    }
+    .app-icon-box svg { width: 100%; height: 100%; }
+
+    .brand-stack {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+    }
+
+    .app-title {
+      font-size: 13.5px;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      color: #fff;
+    }
+
+    .version-tag {
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      padding: 1.5px 6px;
+      border-radius: 5px;
+      background: linear-gradient(135deg, rgba(0, 240, 118, 0.15) 0%, rgba(0, 242, 254, 0.15) 100%);
+      border: 1px solid rgba(0, 240, 118, 0.3);
+      color: var(--accent-green);
+      font-family: var(--font-mono);
+    }
+
+    /* Center: Autonomous Mode Status */
+    .win-title-center {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 14px;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: 20px;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      max-width: 440px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .center-status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--text-muted);
+      transition: all 0.3s ease;
+      flex-shrink: 0;
+    }
+    body.active .center-status-dot {
+      background: var(--accent-green);
+      box-shadow: 0 0 10px var(--accent-green);
+      animation: pulseDot 2s infinite ease-in-out;
+    }
+
+    /* Right: Interactive Sonar Ping HUD & Caption Buttons */
+    .win-title-right {
+      display: flex;
+      align-items: center;
+      height: 100%;
+      -webkit-app-region: no-drag;
+    }
+
+    /* Interactive Sonar Ping Widget */
+    .sonar-ping-widget {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 10px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+      cursor: pointer;
+      margin-right: 8px;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .sonar-ping-widget:hover {
+      background: rgba(0, 240, 118, 0.1);
+      border-color: rgba(0, 240, 118, 0.4);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 14px rgba(0, 240, 118, 0.2);
+    }
+    .sonar-ping-widget:active { transform: scale(0.97); }
+
+    .sonar-emitter {
+      position: relative;
+      width: 14px;
+      height: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .sonar-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent-green);
+      box-shadow: 0 0 8px var(--accent-green);
+      z-index: 2;
+      transition: background 0.3s ease;
+    }
+    .sonar-wave {
+      position: absolute;
+      inset: -2px;
+      border-radius: 50%;
+      border: 1.5px solid var(--accent-green);
+      opacity: 0;
+      pointer-events: none;
+    }
+    .sonar-wave.ring-1 {
+      animation: sonarPulse 2.4s infinite cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+    .sonar-wave.ring-2 {
+      animation: sonarPulse 2.4s infinite cubic-bezier(0.2, 0.8, 0.2, 1);
+      animation-delay: 1.2s;
+    }
+
+    @keyframes sonarPulse {
+      0% { transform: scale(0.5); opacity: 0.9; }
+      100% { transform: scale(2.8); opacity: 0; }
+    }
+
+    .ping-text-group {
+      display: flex;
+      flex-direction: column;
+      line-height: 1.1;
+    }
+    .ping-num {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      color: #fff;
+    }
+    .ping-quality {
+      font-size: 8px;
+      font-weight: 800;
+      color: var(--accent-green);
+      letter-spacing: 0.08em;
+    }
+
+    /* Equalizer signal bars */
+    .ping-signal-bars {
+      display: flex;
+      align-items: flex-end;
+      gap: 2px;
+      height: 12px;
+    }
+    .ping-signal-bars .bar {
+      width: 2.5px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 1px;
+      transition: all 0.3s ease;
+    }
+    .ping-signal-bars .bar.active {
+      background: var(--accent-green);
+      box-shadow: 0 0 4px var(--accent-green);
+    }
+    .bar-1 { height: 4px; }
+    .bar-2 { height: 7px; }
+    .bar-3 { height: 10px; }
+    .bar-4 { height: 13px; }
+
+    .sonar-ping-widget.pinging {
+      animation: pingFlash 0.6s ease-out;
+    }
+    @keyframes pingFlash {
+      0% { box-shadow: 0 0 0 0 rgba(0, 240, 118, 0.8); }
+      70% { box-shadow: 0 0 0 14px rgba(0, 240, 118, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(0, 240, 118, 0); }
+    }
+
+    
+
+    /* Native Windows Caption Controls */
+    .win-caption-controls {
+      display: flex;
+      height: 100%;
+    }
+
+    .win-btn {
+      width: 44px;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: none;
+      color: #cbd5e1;
+      cursor: pointer;
+      transition: background 0.15s ease, color 0.15s ease;
+    }
+    .win-btn svg { width: 10px; height: 10px; fill: currentColor; }
+    .win-btn:hover { background: rgba(255, 255, 255, 0.09); color: #fff; }
+    .win-btn:active { background: rgba(255, 255, 255, 0.15); }
+    
+    .win-btn-close:hover {
+      background: var(--win-close-hover) !important;
+      color: #ffffff !important;
+    }
+    .win-btn-close:active {
+      background: #c4101e !important;
+    }
+
+    /* Hero Core Stage */
+    .hero-stage {
+      position: relative;
+      flex: 1;
+      min-height: 380px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px 24px;
+      background: var(--surface-card);
+      backdrop-filter: blur(35px) saturate(200%);
+      border: 1px solid var(--border-subtle);
+      border-radius: 22px;
+      box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.1), 0 20px 50px rgba(0, 0, 0, 0.5);
+      overflow: hidden;
+    }
+
+    #waveCanvas {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 75px;
+      pointer-events: none;
+      opacity: 0.25;
+      transition: opacity 0.5s ease;
+    }
+    body.active #waveCanvas { opacity: 0.85; }
+
+    /* Interactive Quantum Reactor Core */
+    .core-reactor {
+      position: relative;
+      width: 120px;
+      height: 120px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      margin-bottom: 14px;
+    }
+
+    .reactor-pulse-field {
+      position: absolute;
+      inset: -14px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(0, 240, 118, 0.28) 0%, transparent 70%);
+      opacity: 0;
+      transition: opacity 0.6s ease;
+    }
+    body.active .reactor-pulse-field {
+      opacity: 1;
+      animation: pulseHalo 3s infinite ease-in-out;
+    }
+
+    .reactor-ring-outer {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      border: 1.5px dashed rgba(255, 255, 255, 0.16);
+      transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    body.active .reactor-ring-outer {
+      border: 2px solid var(--accent-green);
+      box-shadow: 0 0 32px rgba(0, 240, 118, 0.55), inset 0 0 18px rgba(0, 240, 118, 0.25);
+      animation: spinClockwise 16s linear infinite;
+    }
+
+    .reactor-ring-inner {
+      position: absolute;
+      inset: 8px;
+      border-radius: 50%;
+      border: 1px dotted rgba(0, 242, 254, 0.2);
+      transition: all 0.6s ease;
+    }
+    body.active .reactor-ring-inner {
+      border-color: rgba(0, 242, 254, 0.6);
+      animation: spinCounterClockwise 12s linear infinite;
+    }
+
+    .reactor-body {
+      position: relative;
+      width: 86px;
+      height: 86px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #1b2338 0%, #0d121e 100%);
+      border: 1.5px solid rgba(255, 255, 255, 0.16);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.65), inset 0 2px 4px rgba(255, 255, 255, 0.14);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 2;
+    }
+    .core-reactor:hover .reactor-body {
+      transform: scale(1.05);
+      border-color: rgba(255, 255, 255, 0.35);
+    }
+    .core-reactor:active .reactor-body { transform: scale(0.96); }
+
+    body.active .reactor-body {
+      background: linear-gradient(135deg, #0d2820 0%, #071712 100%);
+      border-color: rgba(0, 240, 118, 0.8);
+      box-shadow: 0 0 36px rgba(0, 240, 118, 0.45), inset 0 0 18px rgba(0, 240, 118, 0.3);
+    }
+
+    .power-symbol {
+      width: 28px;
+      height: 28px;
+      stroke: var(--text-muted);
+      stroke-width: 2.2;
+      fill: none;
+      transition: all 0.4s ease;
+    }
+    body.active .power-symbol {
+      stroke: var(--accent-green);
+      filter: drop-shadow(0 0 10px rgba(0, 240, 118, 0.9));
+    }
+
+    .core-status-pill {
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      transition: color 0.3s ease;
+    }
+    body.active .core-status-pill {
+      color: var(--accent-green);
+      text-shadow: 0 0 8px rgba(0, 240, 118, 0.7);
+    }
+
+    .hero-headline {
+      font-size: 21px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 5px;
+      text-align: center;
+      color: #fff;
+    }
+
+    .hero-subtitle {
+      font-size: 12.5px;
+      color: var(--text-secondary);
+      max-width: 540px;
+      text-align: center;
+      line-height: 1.5;
+      font-weight: 400;
+      margin-bottom: 8px;
+    }
+
+    /* Live Telemetry Ping Ribbon */
+    
+    /* Strategy & Auto-Tune Control Bar */
+    .strategy-control-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      width: 100%;
+      max-width: 680px;
+      margin: 8px 0 10px 0;
+      padding: 6px 12px;
+      background: rgba(14, 19, 32, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 14px;
+      backdrop-filter: blur(20px);
+      box-sizing: border-box;
+      transition: all 0.3s ease;
+    }
+    .strategy-control-bar:hover {
+      border-color: rgba(0, 242, 254, 0.25);
+    }
+    .strat-select-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1 1 auto;
+      min-width: 0;
+      overflow: hidden;
+    }
+    .strat-icon-tag {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--accent-cyan);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+    }
+    .strategy-select-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: #f8fafc;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      outline: none;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+    .strategy-select-input option {
+      background: #0d121f;
+      color: #f8fafc;
+      padding: 8px;
+    }
+    .autotune-action-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      background: linear-gradient(135deg, rgba(0, 242, 254, 0.15), rgba(0, 240, 118, 0.2));
+      border: 1px solid rgba(0, 240, 118, 0.4);
+      border-radius: 9px;
+      color: #00f076;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .autotune-action-btn:hover {
+      background: linear-gradient(135deg, rgba(0, 242, 254, 0.3), rgba(0, 240, 118, 0.35));
+      border-color: #00f076;
+      box-shadow: 0 0 16px rgba(0, 240, 118, 0.3);
+      transform: translateY(-1px);
+    }
+    .autotune-action-btn:active {
+      transform: scale(0.97);
+    }
+    .autotune-action-btn.tuning {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(0, 242, 254, 0.2));
+      border-color: #f59e0b;
+      color: #f59e0b;
+      cursor: wait;
+      pointer-events: none;
+    }
+
+    .hero-ping-ribbon {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 14px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      font-size: 11.5px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .hero-ping-ribbon:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(0, 240, 118, 0.3);
+    }
+    .hero-ping-ribbon strong {
+      color: #fff;
+      font-family: var(--font-mono);
+    }
+
+    /* 4 Service Cards Grid */
+    /* Premium Futuristic Cyber Switch (GPU-Accelerated Smooth Spring Animation) */
+    .cyber-toggle-wrapper {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      user-select: none;
+      padding: 5px 12px 5px 6px;
+      border-radius: 24px;
+      background: rgba(15, 23, 42, 0.65);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(16px);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .cyber-toggle-wrapper:hover {
+      background: rgba(22, 33, 58, 0.85);
+      border-color: rgba(0, 240, 118, 0.35);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45), 0 0 12px rgba(0, 240, 118, 0.15);
+      transform: translateY(-1px);
+    }
+    .cyber-switch {
+      position: relative;
+      width: 44px;
+      height: 24px;
+      flex-shrink: 0;
+    }
+    .cyber-switch input {
+      position: absolute;
+      opacity: 0;
+      width: 0;
+      height: 0;
+      cursor: pointer;
+    }
+    .cyber-track {
+      position: absolute;
+      inset: 0;
+      border-radius: 24px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
+    }
+    .cyber-thumb {
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #94a3b8;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+      transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.3s ease, box-shadow 0.3s ease;
+    }
+    /* Switch Active State */
+    .cyber-switch input:checked + .cyber-track {
+      background: linear-gradient(135deg, rgba(0, 240, 118, 0.35) 0%, rgba(0, 242, 254, 0.25) 100%);
+      border-color: var(--accent-green);
+      box-shadow: 0 0 16px rgba(0, 240, 118, 0.4), inset 0 0 6px rgba(0, 240, 118, 0.25);
+    }
+    .cyber-switch input:checked + .cyber-track .cyber-thumb {
+      transform: translateX(20px);
+      background: #00f076;
+      box-shadow: 0 0 12px #00f076, 0 2px 6px rgba(0, 0, 0, 0.6);
+    }
+    .cyber-toggle-text {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      color: #94a3b8;
+      transition: color 0.3s ease;
+    }
+    .cyber-toggle-wrapper:hover .cyber-toggle-text,
+    .cyber-switch input:checked ~ .cyber-toggle-text {
+      color: #f8fafc;
+    }
+    .cyber-pulse-badge {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: 0.6px;
+      padding: 2px 6px;
+      border-radius: 5px;
+      background: rgba(0, 240, 118, 0.15);
+      color: var(--accent-green);
+      border: 1px solid rgba(0, 240, 118, 0.35);
+      box-shadow: 0 0 8px rgba(0, 240, 118, 0.2);
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .cyber-pulse-badge:not(.active) {
+      background: rgba(148, 163, 184, 0.1);
+      color: #64748b;
+      border-color: rgba(148, 163, 184, 0.2);
+      box-shadow: none;
+    }
+
+  
+    /* Cyber Diagnostics Modal Overlay (Pure Fixed Overlay, 0% page reflow) */
+    .cyber-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(3, 5, 10, 0.78);
+      backdrop-filter: blur(14px) saturate(160%);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 99999;
+      opacity: 0;
+      transition: opacity 0.22s ease;
+    }
+    .cyber-modal-overlay.open {
+      display: flex;
+      opacity: 1;
+    }
+    .cyber-modal-card {
+      width: 520px;
+      max-width: 92vw;
+      background: rgba(13, 20, 36, 0.95);
+      border: 1px solid rgba(0, 240, 118, 0.28);
+      border-radius: 20px;
+      padding: 22px 24px;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.85), 0 0 30px rgba(0, 240, 118, 0.12);
+      position: relative;
+      transform: scale(0.96);
+      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      box-sizing: border-box;
+    }
+    .cyber-modal-overlay.open .cyber-modal-card {
+      transform: scale(1);
+    }
+    .cyber-modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding-bottom: 14px;
+      margin-bottom: 16px;
+    }
+    .cyber-modal-title-group h3 {
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      color: #fff;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .cyber-modal-title-group p {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin: 3px 0 0;
+    }
+    .cyber-modal-close {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #94a3b8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 13px;
+      transition: all 0.15s ease;
+    }
+    .cyber-modal-close:hover {
+      background: rgba(239, 68, 68, 0.2);
+      border-color: rgba(239, 68, 68, 0.4);
+      color: #ef4444;
+    }
+    .diag-service-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 18px;
+    }
+    .diag-item-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 9px 12px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 10px;
+      transition: background 0.2s ease;
+    }
+    .diag-item-row:hover {
+      background: rgba(255, 255, 255, 0.06);
+    }
+    .diag-item-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .diag-item-name {
+      font-size: 12px;
+      font-weight: 600;
+      color: #f1f5f9;
+    }
+    .diag-item-type {
+      font-size: 10px;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+    }
+    .diag-badge {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      letter-spacing: 0.3px;
+    }
+    .diag-badge.ok {
+      background: rgba(0, 240, 118, 0.15);
+      color: var(--accent-green);
+      border: 1px solid rgba(0, 240, 118, 0.3);
+    }
+    .diag-badge.pending {
+      background: rgba(250, 204, 21, 0.15);
+      color: #facc15;
+      border: 1px solid rgba(250, 204, 21, 0.3);
+    }
+    .diag-badge.err {
+      background: rgba(239, 68, 68, 0.15);
+      color: #ef4444;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+    .diag-footer-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      padding-top: 14px;
+    }
+    .btn-diag-refresh {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 14px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, rgba(0, 240, 118, 0.2) 0%, rgba(0, 242, 254, 0.2) 100%);
+      border: 1px solid rgba(0, 240, 118, 0.4);
+      color: #00f076;
+      font-size: 11.5px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .btn-diag-refresh:hover {
+      background: linear-gradient(135deg, rgba(0, 240, 118, 0.35) 0%, rgba(0, 242, 254, 0.35) 100%);
+      box-shadow: 0 0 12px rgba(0, 240, 118, 0.3);
+      color: #fff;
+    }
+    .btn-diag-refresh:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .diag-footer-status {
+      font-size: 10.5px;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+    }
+
+    /* Titlebar Diagnostics button */
+    .header-diag-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      height: 28px;
+      padding: 0 10px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #cbd5e1;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .header-diag-btn:hover {
+      background: rgba(0, 240, 118, 0.12);
+      border-color: rgba(0, 240, 118, 0.35);
+      color: #00f076;
+    }
+
+  
+    /* Connecting Reactor State (Vibrant Amber / Yellow) */
+    body.status-connecting .reactor-pulse-field {
+      opacity: 1;
+      background: radial-gradient(circle, rgba(250, 204, 21, 0.45) 0%, transparent 70%);
+      animation: pulseHalo 1.8s infinite ease-in-out;
+    }
+    body.status-connecting .reactor-ring-outer {
+      border: 2px solid #facc15;
+      box-shadow: 0 0 32px rgba(250, 204, 21, 0.65), inset 0 0 18px rgba(250, 204, 21, 0.35);
+      animation: spinClockwise 8s linear infinite;
+    }
+    body.status-connecting .reactor-ring-inner {
+      border: 1px dashed rgba(250, 204, 21, 0.85);
+      animation: spinCounterClockwise 6s linear infinite;
+    }
+    body.status-connecting .reactor-body {
+      background: linear-gradient(135deg, rgba(250, 204, 21, 0.28) 0%, rgba(234, 179, 8, 0.16) 100%);
+      border-color: #facc15;
+      box-shadow: 0 0 25px rgba(250, 204, 21, 0.45), inset 0 0 15px rgba(250, 204, 21, 0.3);
+    }
+    body.status-connecting .reactor-icon-svg {
+      stroke: #facc15;
+      filter: drop-shadow(0 0 10px rgba(250, 204, 21, 0.85));
+    }
+    body.status-connecting .reactor-status-text {
+      color: #facc15;
+      text-shadow: 0 0 10px rgba(250, 204, 21, 0.7);
+    }
+
+    /* Offline Reactor State (Crimson Red) */
+    body.status-offline .reactor-pulse-field {
+      opacity: 0.8;
+      background: radial-gradient(circle, rgba(239, 68, 68, 0.4) 0%, transparent 70%);
+    }
+    body.status-offline .reactor-ring-outer {
+      border: 2px solid #ef4444;
+      box-shadow: 0 0 25px rgba(239, 68, 68, 0.5), inset 0 0 14px rgba(239, 68, 68, 0.25);
+    }
+    body.status-offline .reactor-body {
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(185, 28, 28, 0.1) 100%);
+      border-color: #ef4444;
+      box-shadow: 0 0 20px rgba(239, 68, 68, 0.4);
+    }
+    body.status-offline .reactor-icon-svg {
+      stroke: #ef4444;
+      filter: drop-shadow(0 0 8px rgba(239, 68, 68, 0.8));
+    }
+    body.status-offline .reactor-status-text {
+      color: #ef4444;
+    }
+
+  </style>
+</head>
+<body>
+  <div class="cyber-grid"></div>
+
+  <div class="aurora-mesh">
+    <div class="aurora-glow-1"></div>
+  </div>
+
+  <div class="app-viewport">
+    
+    <!-- Windows 11 Native Fluent Titlebar -->
+    <header class="win-titlebar" id="appTitlebar" onmousedown="if(!event.target.closest('button') && !event.target.closest('a')) fetch('http://127.0.0.1:1388/drag').catch(()=>{});">
+      <!-- Left: Quantum Diamond Core Logo & Brand -->
+      <div class="win-title-left">
+        <div class="app-icon-box">
+          <svg viewBox="0 0 100 100" width="100%" height="100%">
+            <defs>
+              <linearGradient id="diaTop" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#00f2fe"/>
+                <stop offset="100%" stop-color="#70e0ff"/>
+              </linearGradient>
+              <linearGradient id="diaBot" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#00f076"/>
+                <stop offset="100%" stop-color="#8b5cf6"/>
+              </linearGradient>
+              <filter id="coreFlare" x="-30%" y="-30%" width="160%" height="160%">
+                <feGaussianBlur stdDeviation="2.5" result="blur"/>
+                <feMerge>
+                  <feMergeNode in="blur"/>
+                  <feMergeNode in="SourceGraphic"/>
+                </feMerge>
+              </filter>
+            </defs>
+            <circle cx="50" cy="50" r="46" fill="#0a0e18" stroke="rgba(0, 242, 254, 0.8)" stroke-width="2.5"/>
+            <circle cx="50" cy="50" r="41" fill="none" stroke="rgba(0, 240, 118, 0.4)" stroke-width="1.2" stroke-dasharray="3,3"/>
+            <polygon points="50,22 78,50 50,50" fill="url(#diaTop)" opacity="0.95"/>
+            <polygon points="50,22 22,50 50,50" fill="#00d4ff" opacity="0.85"/>
+            <polygon points="50,78 22,50 50,50" fill="url(#diaBot)" opacity="0.9"/>
+            <polygon points="50,78 78,50 50,50" fill="#8b5cf6" opacity="0.85"/>
+            <polygon points="50,34 66,50 50,50" fill="#ffffff" opacity="0.35"/>
+            <polygon points="50,34 34,50 50,50" fill="#ffffff" opacity="0.2"/>
+            <polygon points="50,66 34,50 50,50" fill="#ffffff" opacity="0.2"/>
+            <polygon points="50,66 66,50 50,50" fill="#ffffff" opacity="0.35"/>
+            <polygon points="50,22 78,50 50,78 22,50" fill="none" stroke="#ffffff" stroke-width="1.8"/>
+            <line x1="50" y1="22" x2="50" y2="78" stroke="#ffffff" stroke-width="1.2" opacity="0.8"/>
+            <line x1="22" y1="50" x2="78" y2="50" stroke="#ffffff" stroke-width="1.2" opacity="0.8"/>
+            <circle cx="50" cy="50" r="6" fill="#ffffff" filter="url(#coreFlare)"/>
+            <line x1="36" y1="50" x2="64" y2="50" stroke="#ffffff" stroke-width="1.8"/>
+            <line x1="50" y1="36" x2="50" y2="64" stroke="#ffffff" stroke-width="1.8"/>
+          </svg>
+        </div>
+        <div class="brand-stack">
+          <span class="app-title">SpectraGlide</span>
+          <span class="version-tag">BOOST</span>
+        </div>
+      </div>
+
+      <!-- Center: Current Status -->
+      <div class="win-title-center">
+        <div class="center-status-dot" id="centerStatusDot"></div>
+        <span id="centerStatus">STANDBY</span>
+      </div>
+
+      <!-- Right: Sonar Ping HUD, Diag & Native Caption Buttons -->
+      <div class="win-title-right">
+        <!-- Interactive Sonar Ping Widget -->
+        <div class="sonar-ping-widget" id="sonarPingWidget" onclick="triggerPingRadar(event)" onmousedown="event.stopPropagation()" title="Нажмите для мгновенного замера задержки сети">
+          <div class="sonar-emitter">
+            <span class="sonar-wave ring-1"></span>
+            <span class="sonar-wave ring-2"></span>
+            <span class="sonar-dot" id="sonarDot"></span>
+          </div>
+          <div class="ping-text-group">
+            <span class="ping-num" id="pingValue">-- ms</span>
+            <span class="ping-quality" id="pingQuality">СЕТЬ</span>
+          </div>
+          <div class="ping-signal-bars">
+            <span class="bar bar-1 active"></span>
+            <span class="bar bar-2 active"></span>
+            <span class="bar bar-3 active"></span>
+            <span class="bar bar-4 active"></span>
+          </div>
+        </div>
+
+        <!-- Windows Caption Buttons: Сворачивание в трей, Свернуть, Закрыть -->
+                <button class="header-diag-btn" id="btnOpenDiag" onclick="openDiag(event)" onmousedown="event.stopPropagation()" title="Сетевая диагностика и замер реальной задержки узлов">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+          <span>Диагностика</span>
+        </button>
+
+        <div class="win-caption-controls" onmousedown="event.stopPropagation()">
+          <button class="win-btn win-btn-tray active" id="btnTraySetting" onclick="toggleCloseToTray(event)" onmousedown="event.stopPropagation()" title="Сворачивать в трей при закрытии (крестик): ВКЛЮЧЕНО (нажмите чтобы изменить)">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 17h16M7 17l2.5-4h5l2.5 4M12 3v9M8 8l4 4 4-4"/>
+            </svg>
+            <span class="tray-dot active" id="trayDot"></span>
+          </button>
+          <button class="win-btn" title="Свернуть на панель задач" id="btnMin" onclick="winMin(event)" onmousedown="event.stopPropagation()">
+            <svg viewBox="0 0 10 10"><path d="M0 5h10v1H0z"/></svg>
+          </button>
+          <button class="win-btn win-btn-close" title="Закрыть" id="btnClose" onclick="winClose(event)" onmousedown="event.stopPropagation()">
+            <svg viewBox="0 0 10 10"><path d="M1 0L0 1l4 4-4 4 1 1 4-4 4 4 1-1-4-4 4-4-1-1-4 4-4-4z"/></svg>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Reactor Core Stage -->
+    <main class="hero-stage">
+      <canvas id="waveCanvas"></canvas>
+
+      <div class="core-reactor" onclick="toggleProtection()">
+        <div class="reactor-pulse-field"></div>
+        <div class="reactor-ring-outer"></div>
+        <div class="reactor-ring-inner"></div>
+        <div class="reactor-body">
+          <svg class="power-symbol" viewBox="0 0 24 24">
+            <path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path>
+            <line x1="12" y1="2" x2="12" y2="12"></line>
+          </svg>
+          <span class="core-status-pill" id="coreLabel">STANDBY</span>
+        </div>
+      </div>
+
+      <h1 class="hero-headline" id="heroTitle">Ускорение отключено</h1>
+      <p class="hero-subtitle" id="heroSubtitle">
+        Нажмите на сферу для включения аппаратного QoS, снижения задержки и ускорения потокового медиа.
+      </p>
+
+      <div class="hero-ping-ribbon" onclick="triggerPingRadar(event)">
+        <span style="color:var(--accent-green)">●</span>
+        <span>Пинг магистрали: <strong id="ribbonPing">-- ms</strong></span>
+        <span style="opacity:0.4">|</span>
+        <span style="color:var(--accent-cyan); font-weight:600">Маршруты оптимизированы</span>
+      </div>
+      <!-- Strategy Selector & Auto-Tune Bar -->
+      <div class="strategy-control-bar" id="strategyBar" onmousedown="event.stopPropagation()">
+        <label class="cyber-toggle-wrapper" id="autoTuneWrapper" title="Автоматический подбор оптимальной стратегии обхода (включен по умолчанию)">
+          <div class="cyber-switch">
+            <input type="checkbox" id="chkAutoTune" checked onchange="onAutoTuneToggle(this.checked)">
+            <span class="cyber-track">
+              <span class="cyber-thumb"></span>
+            </span>
+          </div>
+          <span class="cyber-toggle-text">АВТОПОДБОР</span>
+          <span class="cyber-pulse-badge active" id="autoTuneBadge">AUTO</span>
+        </label>
+
+        <div class="strat-select-group">
+          <div class="strat-icon-tag">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="4" y1="21" x2="4" y2="14"></line>
+              <line x1="4" y1="10" x2="4" y2="3"></line>
+              <line x1="12" y1="21" x2="12" y2="12"></line>
+              <line x1="12" y1="8" x2="12" y2="3"></line>
+              <line x1="20" y1="21" x2="20" y2="16"></line>
+              <line x1="20" y1="12" x2="20" y2="3"></line>
+              <line x1="1" y1="14" x2="7" y2="14"></line>
+              <line x1="9" y1="8" x2="15" y2="8"></line>
+              <line x1="17" y1="16" x2="23" y2="16"></line>
+            </svg>
+            <span>ПРОФИЛЬ:</span>
+          </div>
+          <select id="strategySelect" class="strategy-select-input" onchange="onStrategyChange(this.value)">
+            <option value="balanced">Сбалансированный [AI] (Реком.)</option>
+            <option value="adaptive">Адаптивный поток [AI]</option>
+            <option value="deep_overlap">Глубокая фрагментация [AI]</option>
+            <option value="hardened_filter">Усиленный фильтр</option>
+            <option value="tcp_inversion">Инверсный стек</option>
+            <option value="multisplit">Мульти-сегмент [AI]</option>
+          </select>
+        </div>
+      </div>
+    </main>
+
+  </div>
+
+  <script>
+    let active = false;
+    let currentStatus = 'standby'; // 'online', 'connecting', 'offline', 'standby'
+    let isSyncing = false;
+    let waveAnimId = null;
+    let closeToTray = true;
+
+    // 1. Canvas Waveform Render (Hero Stage)
+    const canvas = document.getElementById('waveCanvas');
+    const ctx = canvas.getContext('2d');
+    let step = 0;
+
+    function resizeCanvas() {
+      if (canvas && canvas.parentElement) {
+        canvas.width = canvas.parentElement.clientWidth;
+        canvas.height = 75;
+      }
+    }
+    window.addEventListener('resize', resizeCanvas);
+    setTimeout(resizeCanvas, 50);
+
+    function drawWave() {
+      if (!active || currentStatus === 'standby') {
+        if (canvas && canvas.width > 0 && canvas.height > 0) {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.beginPath();
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+          ctx.lineWidth = 1;
+          ctx.moveTo(0, canvas.height / 2);
+          ctx.lineTo(canvas.width, canvas.height / 2);
+          ctx.stroke();
+        }
+        return;
+      }
+      try {
+        if (canvas && canvas.width > 0 && canvas.height > 0) {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          const width = canvas.width;
+          const height = canvas.height;
+          
+          ctx.beginPath();
+          ctx.lineWidth = 1.8;
+
+          let amp = 16;
+          let speed = 0.08;
+
+          if (currentStatus === 'online') {
+            ctx.strokeStyle = 'rgba(0, 240, 118, 0.85)';
+            amp = 16;
+            speed = 0.07;
+          } else if (currentStatus === 'connecting') {
+            ctx.strokeStyle = 'rgba(250, 204, 21, 0.9)';
+            amp = 22;
+            speed = 0.14;
+          } else if (currentStatus === 'offline') {
+            ctx.strokeStyle = 'rgba(239, 68, 68, 0.75)';
+            amp = 9;
+            speed = 0.04;
+          }
+
+          for (let x = 0; x < width; x += 5) {
+            const y = height / 2 + Math.sin(x * 0.015 + step * speed) * amp * Math.sin(x * 0.003 + step * 0.012);
+            if (x === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+          }
+          ctx.stroke();
+          step++;
+        }
+      } catch (e) {}
+      waveAnimId = requestAnimationFrame(drawWave);
+    }
+    setTimeout(drawWave, 100);
+
+    // 2. Hardware-Accelerated Ambient Spectrum Flow Canvas (Dock)
+    const specCanvas = document.getElementById('spectrumCanvas');
+    const specCtx = specCanvas ? specCanvas.getContext('2d') : null;
+    let specStep = 0;
+
+    function resizeSpecCanvas() {
+      if (specCanvas && specCanvas.parentElement) {
+        specCanvas.width = specCanvas.parentElement.clientWidth - 36;
+        specCanvas.height = 36;
+      }
+    }
+    window.addEventListener('resize', resizeSpecCanvas);
+    setTimeout(resizeSpecCanvas, 60);
+
+    function drawSpectrum() {
+      if (!specCtx || !specCanvas || specCanvas.width <= 0) return;
+      try {
+        const w = specCanvas.width;
+        const h = specCanvas.height;
+        specCtx.clearRect(0, 0, w, h);
+
+        let strokeStyle = 'rgba(0, 240, 118, 0.75)';
+        let speed = 0.05;
+        let amp = 8;
+
+        if (currentStatus === 'online') {
+          strokeStyle = 'rgba(0, 240, 118, 0.75)';
+          speed = 0.06;
+          amp = 8;
+        } else if (currentStatus === 'connecting') {
+          strokeStyle = 'rgba(250, 204, 21, 0.85)';
+          speed = 0.12;
+          amp = 12;
+        } else if (currentStatus === 'offline') {
+          strokeStyle = 'rgba(239, 68, 68, 0.6)';
+          speed = 0.02;
+          amp = 5;
+        } else {
+          strokeStyle = 'rgba(255, 255, 255, 0.08)';
+          speed = 0.01;
+          amp = 2;
+        }
+
+        specCtx.beginPath();
+        specCtx.lineWidth = 1.4;
+        specCtx.strokeStyle = strokeStyle;
+
+        for (let x = 0; x < w; x += 6) {
+          const y = h / 2 + Math.sin(x * 0.025 + specStep * speed) * amp * Math.cos(x * 0.008 + specStep * 0.01);
+          if (x === 0) specCtx.moveTo(x, y);
+          else specCtx.lineTo(x, y);
+        }
+        specCtx.stroke();
+        specStep++;
+      } catch (e) {}
+      requestAnimationFrame(drawSpectrum);
+    }
+    setTimeout(drawSpectrum, 120);
+
+    function applySystemStatus(status, state) {
+      currentStatus = status || 'standby';
+      const body = document.body;
+      body.classList.remove('status-online', 'status-connecting', 'status-offline', 'status-standby', 'active');
+
+      const label = document.getElementById('coreLabel');
+      const title = document.getElementById('heroTitle');
+      const sub = document.getElementById('heroSubtitle');
+      const centerStatus = document.getElementById('centerStatus');
+      const hudStreamStatus = document.getElementById('hudStreamStatus');
+
+      if (status === 'online') {
+        body.classList.add('active', 'status-online');
+        active = true;
+        if (label) label.textContent = 'ONLINE';
+        if (centerStatus) {
+          centerStatus.textContent = 'УСКОРЕНИЕ АКТИВНО // ONLINE';
+          centerStatus.style.color = 'var(--accent-green)';
+        }
+        if (title) title.textContent = 'Ускорение активно // Онлайн';
+        const sName = state && state.active_strategy_name ? state.active_strategy_name : 'Сбалансированный [AI]';
+        if (sub) {
+          sub.textContent = 'Доступ к ИИ-платформам и ресурсам подтверждён. Профиль: ' + sName;
+        }
+        
+      } else if (status === 'connecting') {
+        body.classList.add('active', 'status-connecting');
+        active = true;
+        if (label) label.textContent = 'СВЯЗЬ...';
+        if (centerStatus) {
+          centerStatus.textContent = 'УСТАНАВЛИВАЕТСЯ СОЕДИНЕНИЕ...';
+          centerStatus.style.color = '#facc15';
+        }
+        if (title) title.textContent = 'Устанавливается соединение...';
+        if (sub) sub.textContent = 'Подбор профиля и проверка доступности ИИ-платформ и ресурсов...';
+        
+      } else if (status === 'offline') {
+        body.classList.add('status-offline');
+        active = false;
+        if (label) label.textContent = 'OFFLINE';
+        if (centerStatus) {
+          centerStatus.textContent = 'СОЕДИНЕНИЕ НЕ УСТАНОВЛЕНО';
+          centerStatus.style.color = '#ef4444';
+        }
+        if (title) title.textContent = 'Соединение не установлено';
+        if (sub) sub.textContent = 'Сервисы или сеть недоступны. Выберите профиль или включите автоподбор.';
+        
+      } else { // standby
+        body.classList.add('status-standby');
+        active = false;
+        if (label) label.textContent = 'STANDBY';
+        if (centerStatus) {
+          centerStatus.textContent = 'STANDBY';
+          centerStatus.style.color = '#94a3b8';
+        }
+        if (title) title.textContent = 'Ускорение отключено';
+        if (sub) sub.textContent = 'Нажмите на сферу для включения аппаратного QoS, снижения задержки и защиты сети.';
+        
+      }
+
+      if (waveAnimId) cancelAnimationFrame(waveAnimId);
+      waveAnimId = requestAnimationFrame(drawWave);
+    }
+
+    function toggleProtection() {
+      if (!active) {
+        applySystemStatus('connecting');
+        if (window.pywebview && window.pywebview.api) {
+          window.pywebview.api.start_engine();
+        }
+      } else {
+        applySystemStatus('standby');
+        if (window.pywebview && window.pywebview.api) {
+          window.pywebview.api.stop_engine();
+        }
+      }
+      triggerPingRadar();
+    }
+
+    /* Radar Sonar Ping Animation */
+    function triggerPingRadar(e) {
+      if (e) { e.preventDefault(); e.stopPropagation(); }
+      const widget = document.getElementById('sonarPingWidget');
+      if (widget) {
+        widget.classList.remove('pinging');
+        void widget.offsetWidth;
+        widget.classList.add('pinging');
+      }
+      syncSystemState();
+    }
+
+    async function onAutoTuneToggle(checked) {
+      updateAutoTuneBadgeUI(checked);
+      if (window.pywebview && window.pywebview.api && window.pywebview.api.toggle_auto_tune) {
+        try {
+          await window.pywebview.api.toggle_auto_tune(checked);
+          const sub = document.getElementById('heroSubtitle');
+          if (sub) {
+            sub.textContent = checked
+              ? 'Автоподбор активен: автоматический выбор лучшего профиля для AI и ТСПУ.'
+              : 'Автоподбор выключен: ручной выбор профиля, фоновые проверки отключены.';
+          }
+        } catch (e) {
+          console.error("toggle_auto_tune error:", e);
+        }
+      }
+    }
+
+    function updateAutoTuneBadgeUI(checked) {
+      const badge = document.getElementById('autoTuneBadge');
+      if (badge) {
+        if (checked) {
+          badge.textContent = 'AUTO';
+          badge.classList.add('active');
+        } else {
+          badge.textContent = 'РУЧНОЙ';
+          badge.classList.remove('active');
+        }
+      }
+    }
+
+    async function onStrategyChange(stratId) {
+      if (window.pywebview && window.pywebview.api && window.pywebview.api.change_strategy) {
+        try {
+          applySystemStatus('connecting');
+          const res = await window.pywebview.api.change_strategy(stratId);
+          const sub = document.getElementById('heroSubtitle');
+          if (sub && res && res.strategy_name) {
+            sub.textContent = 'Применён профиль: ' + res.strategy_name;
+          }
+        } catch (e) {
+          console.error("change_strategy error:", e);
+        }
+      }
+    }
+
+    async function toggleCloseToTray(e) {
+      if (e) e.stopPropagation();
+      closeToTray = !closeToTray;
+      updateTrayBtnUI(closeToTray);
+
+      if (window.pywebview && window.pywebview.api && window.pywebview.api.toggle_close_to_tray) {
+        try {
+          const res = await window.pywebview.api.toggle_close_to_tray(closeToTray);
+          if (res && res.close_to_tray !== undefined) {
+            closeToTray = res.close_to_tray;
+            updateTrayBtnUI(closeToTray);
+          }
+        } catch (err) {
+          console.error("toggle_close_to_tray error:", err);
+        }
+      }
+    }
+
+    function updateTrayBtnUI(active) {
+      const btn = document.getElementById('btnTraySetting');
+      const dot = document.getElementById('trayDot');
+      if (btn) {
+        if (active) {
+          btn.classList.add('active');
+          btn.title = "Сворачивание в трей при закрытии (крестик): ВКЛЮЧЕНО (нажмите чтобы изменить)";
+        } else {
+          btn.classList.remove('active');
+          btn.title = "Сворачивание в трей при закрытии (крестик): ВЫКЛЮЧЕНО (программа закроется)";
+        }
+      }
+      if (dot) {
+        if (active) dot.classList.add('active');
+        else dot.classList.remove('active');
+      }
+    }
+
+    async function syncSystemState() {
+      if (isSyncing) return;
+      isSyncing = true;
+      try {
+        let state = null;
+        if (window.pywebview && window.pywebview.api && window.pywebview.api.get_system_state) {
+          try {
+            state = await window.pywebview.api.get_system_state();
+          } catch (apiErr) {
+            console.error("pywebview state error:", apiErr);
+          }
+        }
+        if (!state) {
+          try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 800);
+            const res = await fetch('http://127.0.0.1:1388/state', { signal: controller.signal, cache: 'no-store' });
+            clearTimeout(timeoutId);
+            if (res.ok) state = await res.json();
+          } catch (_) {
+            return;
+          }
+        }
+        if (!state) return;
+
+        // 1. Sync Reactive State (Online / Connecting / Offline / Standby)
+        if (state.services) updateDiagResults(state.services);
+        if (state.connection_status && state.connection_status !== currentStatus) {
+          applySystemStatus(state.connection_status, state);
+        }
+
+        // 2. AutoTune Checkbox Sync
+        const chk = document.getElementById('chkAutoTune');
+        if (chk && state.auto_tune_enabled !== undefined && document.activeElement !== chk) {
+          chk.checked = state.auto_tune_enabled;
+          updateAutoTuneBadgeUI(state.auto_tune_enabled);
+        }
+
+        // 3. Strategy Selector Sync
+        const stratSelect = document.getElementById('strategySelect');
+        if (stratSelect && state.active_strategy && document.activeElement !== stratSelect) {
+          stratSelect.value = state.active_strategy;
+        }
+
+        // 4. Close to tray setting sync
+        if (state.close_to_tray !== undefined && state.close_to_tray !== closeToTray) {
+          closeToTray = state.close_to_tray;
+          updateTrayBtnUI(closeToTray);
+        }
+
+        // 5. Live Ping Widgets
+        const dnsItem = (state.services && (state.services.dns || state.services.youtube)) || null;
+        if (dnsItem && dnsItem.latency > 0) {
+          const lat = Math.round(dnsItem.latency);
+          const pingVal = document.getElementById('pingValue');
+          const ribbonPing = document.getElementById('ribbonPing');
+          const dockPing = document.getElementById('dockPing');
+          const pingQuality = document.getElementById('pingQuality');
+          const sonarDot = document.getElementById('sonarDot');
+
+          if (pingVal) pingVal.textContent = `${lat} ms`;
+          if (ribbonPing) ribbonPing.textContent = `${lat} ms`;
+          if (dockPing) dockPing.textContent = `${lat} ms`;
+
+          if (pingQuality && sonarDot) {
+            if (lat < 60) {
+              pingQuality.textContent = 'ОТЛИЧНО';
+              pingQuality.style.color = 'var(--accent-green)';
+              sonarDot.style.background = 'var(--accent-green)';
+            } else if (lat < 120) {
+              pingQuality.textContent = 'ХОРОШО';
+              pingQuality.style.color = 'var(--accent-cyan)';
+              sonarDot.style.background = 'var(--accent-cyan)';
+            } else {
+              pingQuality.textContent = 'СТАБИЛЬНО';
+              pingQuality.style.color = '#facc15';
+              sonarDot.style.background = '#facc15';
+            }
+          }
+        }
+
+        
+      } catch (e) {
+        console.error("Sync error:", e);
+      } finally {
+        isSyncing = false;
+      }
+    }
+
+    
+    function openDiag(e) {
+      if (e) e.stopPropagation();
+      const modal = document.getElementById('diagModal');
+      if (modal) modal.classList.add('open');
+      runLiveDiag();
+    }
+
+    function closeDiag(e) {
+      if (e) e.stopPropagation();
+      const modal = document.getElementById('diagModal');
+      if (modal) modal.classList.remove('open');
+    }
+
+    async function runLiveDiag() {
+      const btn = document.getElementById('btnDiagRefresh');
+      const txt = document.getElementById('btnDiagRefreshText');
+      if (btn) btn.disabled = true;
+      if (txt) txt.textContent = 'Замер задержки...';
+
+      try {
+        if (window.pywebview && window.pywebview.api && window.pywebview.api.run_diagnostics) {
+          const res = await window.pywebview.api.run_diagnostics();
+          if (res) updateDiagResults(res);
+        } else {
+          // Poll system state as fallback
+          syncSystemState();
+        }
+      } catch (err) {
+        console.error("runLiveDiag error:", err);
+      } finally {
+        if (btn) btn.disabled = false;
+        if (txt) txt.textContent = 'Замерить пинг заново';
+        const ts = document.getElementById('diagLastUpdated');
+        if (ts) {
+          const now = new Date();
+          ts.textContent = 'Обновлено в ' + now.toLocaleTimeString();
+        }
+      }
+    }
+
+    function updateDiagResults(services) {
+      if (!services) return;
+      for (const [key, info] of Object.entries(services)) {
+        const badge = document.getElementById('diagBadge_' + key);
+        if (badge) {
+          if (info.ok && info.latency > 0) {
+            badge.className = 'diag-badge ok';
+            const lat = Math.round(info.latency);
+            badge.textContent = `● ${lat} ms`;
+          } else if (info.status === 'testing' || info.status === 'standby') {
+            badge.className = 'diag-badge pending';
+            badge.textContent = info.note || 'Замер...';
+          } else {
+            badge.className = 'diag-badge err';
+            badge.textContent = '✕ Недоступен';
+          }
+        }
+      }
+    }
+
+    function winMin(e) {
+      if (e) e.stopPropagation();
+      if (window.pywebview && window.pywebview.api && window.pywebview.api.minimize) {
+        window.pywebview.api.minimize();
+      }
+    }
+
+    function winClose(e) {
+      if (e) e.stopPropagation();
+      if (window.pywebview && window.pywebview.api && window.pywebview.api.close) {
+        window.pywebview.api.close();
+      }
+    }
+
+    /* Ultra-Responsive High-Precision Window Drag Handler (60-144 FPS) */
+    (function initDragHandler() {
+      const bar = document.getElementById('appTitlebar');
+      if (!bar) return;
+
+      let isDragging = false;
+      let startX = 0;
+      let startY = 0;
+      let targetX = 0;
+      let targetY = 0;
+      let pending = false;
+      let lastTime = 0;
+
+      bar.addEventListener('mousedown', (e) => {
+        if (e.button !== 0) return;
+        if (e.target.closest('.win-caption-controls') || 
+            e.target.closest('.header-diag-btn') || 
+            e.target.closest('.sonar-ping-widget') ||
+            e.target.closest('button') ||
+            e.target.closest('a')) {
+          return;
+        }
+
+        isDragging = true;
+        startX = e.clientX;
+        startY = e.clientY;
+
+        window.addEventListener('mousemove', onMove, { passive: true });
+        window.addEventListener('mouseup', onUp);
+        window.addEventListener('blur', onUp);
+      });
+
+      function onMove(e) {
+        if (!isDragging) return;
+        targetX = Math.round(e.screenX - startX);
+        targetY = Math.round(e.screenY - startY);
+
+        if (!pending) {
+          pending = true;
+          requestAnimationFrame(() => {
+            pending = false;
+            if (!isDragging) return;
+            const now = performance.now();
+            if (now - lastTime >= 10) {
+              lastTime = now;
+              if (window.pywebview && window.pywebview.api && window.pywebview.api.move_window) {
+                window.pywebview.api.move_window(targetX, targetY);
+              }
+            }
+          });
+        }
+      }
+
+      function onUp() {
+        if (isDragging) {
+          isDragging = false;
+          pending = false;
+          window.removeEventListener('mousemove', onMove);
+          window.removeEventListener('mouseup', onUp);
+          window.removeEventListener('blur', onUp);
+        }
+      }
+    })();
+
+    /* Lifecycle Init */
+    window.addEventListener('pywebviewready', function() {
+      applySystemStatus('connecting');
+      setTimeout(syncSystemState, 600);
+    });
+
+    // Polling System State every 1.5s
+    setInterval(syncSystemState, 1500);
+    setTimeout(syncSystemState, 300);
+
+    </script>
+  <!-- Cyber Diagnostics Modal (Fixed Overlay) -->
+  <div class="cyber-modal-overlay" id="diagModal" onclick="if(event.target===this) closeDiag(event)">
+    <div class="cyber-modal-card">
+      <div class="cyber-modal-header">
+        <div class="cyber-modal-title-group">
+          <h3>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+            СЕТЕВАЯ ДИАГНОСТИКА // ПИНГ УЗЛОВ
+          </h3>
+          <p>Замер реальной сетевой задержки (RTT) до магистральных узлов и шлюзов ускорения</p>
+        </div>
+        <button class="cyber-modal-close" onclick="closeDiag(event)" title="Закрыть">✕</button>
+      </div>
+
+      <div class="diag-service-list" id="diagServiceList">
+        <div class="diag-item-row" id="diagRow_chatgpt">
+          <div class="diag-item-info">
+            <span class="diag-item-name">Нейросетевой шлюз // Кластер Alpha</span>
+            <span class="diag-item-type">AI-Gateway Transit Node</span>
+          </div>
+          <span class="diag-badge pending" id="diagBadge_chatgpt">Замер...</span>
+        </div>
+        <div class="diag-item-row" id="diagRow_claude">
+          <div class="diag-item-info">
+            <span class="diag-item-name">Нейросетевой шлюз // Кластер Beta</span>
+            <span class="diag-item-type">AI-Gateway Neural Edge</span>
+          </div>
+          <span class="diag-badge pending" id="diagBadge_claude">Замер...</span>
+        </div>
+        <div class="diag-item-row" id="diagRow_youtube">
+          <div class="diag-item-info">
+            <span class="diag-item-name">Магистральный медиа-узел // Ultra-HD CDN</span>
+            <span class="diag-item-type">High-Speed Media Stream</span>
+          </div>
+          <span class="diag-badge pending" id="diagBadge_youtube">Замер...</span>
+        </div>
+        <div class="diag-item-row" id="diagRow_instagram">
+          <div class="diag-item-info">
+            <span class="diag-item-name">Транзитный сетевой узел // Edge-01</span>
+            <span class="diag-item-type">Global Edge Network</span>
+          </div>
+          <span class="diag-badge pending" id="diagBadge_instagram">Замер...</span>
+        </div>
+        <div class="diag-item-row" id="diagRow_facebook">
+          <div class="diag-item-info">
+            <span class="diag-item-name">Транзитный сетевой узел // Edge-02</span>
+            <span class="diag-item-type">Social Ingress Gateway</span>
+          </div>
+          <span class="diag-badge pending" id="diagBadge_facebook">Замер...</span>
+        </div>
+        <div class="diag-item-row" id="diagRow_dns">
+          <div class="diag-item-info">
+            <span class="diag-item-name">Магистральный Anycast DNS Resolver</span>
+            <span class="diag-item-type">Core Anycast Ultra-DNS</span>
+          </div>
+          <span class="diag-badge pending" id="diagBadge_dns">Замер...</span>
+        </div>
+      </div>
+      <div class="diag-footer-bar">
+        <button class="btn-diag-refresh" id="btnDiagRefresh" onclick="runLiveDiag()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+          <span id="btnDiagRefreshText">Замерить пинг заново</span>
+        </button>
+        <span class="diag-footer-status" id="diagLastUpdated">Мониторинг сети активен</span>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
